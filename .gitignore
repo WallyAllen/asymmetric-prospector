@@ -1,0 +1,20 @@
+# Entornos virtuales y secretos
+venv/
+env/
+.env
+__pycache__/
+*.pyc
+
+# Archivos del SO
+.DS_Store
+Thumbs.db
+
+# Datos sensibles generados por los scripts (Privacidad de los leads)
+Prospector/data/01_raw/*.json
+Prospector/data/02_audited/*.json
+Prospector/data/03_composed/*.json
+Prospector/data/04_sent/*.json
+Prospector/data/screenshots/*.png
+
+# Playwright y Scrapling caches locales (si las hubiera)
+.playwright/
