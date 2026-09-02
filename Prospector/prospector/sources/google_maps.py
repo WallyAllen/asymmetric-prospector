@@ -77,7 +77,7 @@ def _make_page_action(cfg: MiningSettings):
 def _first(node, *selectors: str) -> str | None:
     for selector in selectors:
         try:
-            value = node.css_first(selector)
+            value = node.css(selector).first
         except Exception:  # noqa: BLE001 - selector no soportado, probamos el siguiente
             continue
         if value is None:
@@ -98,7 +98,7 @@ def _parse_card(card, nicho: str) -> Lead | None:
     y a un par de clases alternativas por si esa etiqueta falta.
     """
     try:
-        anchor = card.css_first('a[href*="/maps/place/"]')
+        anchor = card.css('a[href*="/maps/place/"]').first
     except Exception:  # noqa: BLE001
         anchor = None
     if anchor is None:
@@ -141,7 +141,7 @@ def _parse_card(card, nicho: str) -> Lead | None:
     # que por regex sobre el texto: Maps no siempre muestra el nº de reseñas al
     # lado, así que exigir ambos juntos (como antes) perdía el rating igual.
     try:
-        estrellas = card.css_first('span[aria-label*="estrella"], span[aria-label*="star"]')
+        estrellas = card.css('span[aria-label*="estrella"], span[aria-label*="star"]').first
     except Exception:  # noqa: BLE001
         estrellas = None
     rating_match = None
