@@ -29,12 +29,15 @@ def _archivo(lead: Lead) -> Path:
 def _contenido(lead: Lead) -> str:
     borrador = lead.email_draft
     auditoria = lead.audit
-    rating = f"{lead.rating:.1f}".replace(".", ",") if lead.rating else "sin dato"
-    resenas = str(lead.resenas) if lead.resenas else "?"
+    if lead.rating:
+        rating_txt = f"{lead.rating:.1f}".replace(".", ",")
+        rating_txt += f" en Maps ({lead.resenas} reseñas)" if lead.resenas else " en Maps"
+    else:
+        rating_txt = "sin dato"
     return (
         f"NEGOCIO:   {lead.etiqueta}\n"
         f"TELÉFONO:  {lead.telefono or 'sin dato'}\n"
-        f"RATING:    {rating} en Maps ({resenas} reseñas)\n"
+        f"RATING:    {rating_txt}\n"
         f"SCORE:     {auditoria.score if auditoria else '?'}/100 ({auditoria.veredicto if auditoria else '?'})\n"
         f"{'─' * 60}\n"
         f"(gancho de referencia, no se manda: \"{borrador.asunto}\")\n\n"
