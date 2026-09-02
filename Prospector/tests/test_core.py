@@ -138,7 +138,10 @@ class TestReglas(unittest.TestCase):
 
 class TestRedaccion(unittest.TestCase):
     def setUp(self):
-        self.cfg = ComposeSettings()
+        # Aislado de .env a propósito: los tests no pueden depender de la
+        # config personal de quien los corre (p. ej. SENDER_PROOF real).
+        self.cfg = ComposeSettings(sender_name="Felipe", sender_role="CRO",
+                                    sender_site="", sender_proof="", max_findings_in_email=2)
 
     def _lead_auditado(self) -> Lead:
         res = _res(tiene_viewport_meta=False, ctas_en_fold=0, lcp_ms=5200)

@@ -326,8 +326,9 @@ Reglas innegociables:
    signos de exclamación, mayúsculas de énfasis, emojis, guiones largos.
 5. {regla_adjunto}
 6. Cierra ofreciendo un prototipo de la portada con una pregunta directa de bajo compromiso y un plazo
-   concreto ("me lleva un par de horas", "lo tenés mañana"). Prohibido el patrón "¿te opondrías a...?" o
-   cualquier doble negación tipo "¿no te molestaría que...?": preguntá directo, "¿te sirve si...?".
+   concreto ("me lleva un par de horas", "lo tenés mañana"). Nunca digas que el prototipo de ESE negocio
+   puntual ya existe o ya está hecho: no es cierto hasta que responda. Prohibido el patrón "¿te opondrías
+   a...?" o cualquier doble negación tipo "¿no te molestaría que...?": preguntá directo, "¿te sirve si...?".
 7. Firma como {firmante} ({rol}). Sin posdatas ni enlaces de baja.
 8. {regla_dialecto}
 {regla_prueba}
