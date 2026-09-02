@@ -1,12 +1,16 @@
-# 🤖 Agent Skills de Prospección
+# 🤖 Agent Skills de prospección
 
-Este directorio contendrá las instrucciones (skills) para los agentes enfocados en ventas asimétricas y extracción de datos.
+Skills globales que usa el proyecto:
 
-**Skills Globales Clave:**
-- `scrapling-official`: Para scraping sigiloso e inteligente de la red eludiendo antibots.
-- `playwright-cli`: Para automatización de navegadores pesados y capturas de pantalla.
-- `humanizer`: Para editar los copys y evitar que los correos suenen generados por IA (esencial para el "Anti-Slop").
+- `scrapling-official` — minado sigiloso de Google Maps y extracción de contactos.
+- `playwright-cli` — auditoría técnica y capturas multi-viewport.
+- `humanizer` — criterio anti-slop; sus patrones están implementados en
+  `prospector/compose/writer.py` (`FRASES_PROHIBIDAS`, `limpiar()`).
+- `page-cro` — vocabulario de conversión que alimenta los argumentos de `rules.py`.
 
-**Skills a crear aquí a futuro:**
-- `lead_qualifier.md`: Analiza el sitio web extraído (usando Gemini y capturas) evaluando su UX actual y decide si es un buen candidato.
-- `cold_email_writer.md`: Especialista en redactar correos en frío, integrando el análisis del Qualifier para crear un gancho personalizado.
+## Pendientes útiles
+
+- `nicho_researcher.md` — dado un nicho, proponer las consultas de Maps que mejor
+  rinden (ciudad + servicio + modificadores) y los umbrales de score adecuados.
+- `respondedor.md` — qué hacer cuando el prospecto contesta: calificar la respuesta
+  y disparar el mockup del nicho.

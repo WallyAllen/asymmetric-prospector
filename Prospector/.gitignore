@@ -1,0 +1,21 @@
+# Entornos y caché
+scripts/venv/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secretos
+.env
+.env.local
+.env.*.local
+
+# Datos generados (contienen datos de terceros)
+data/01_raw/*.json
+data/02_audited/*.json
+data/03_composed/*.json
+data/04_sent/*.json
+data/screenshots/*
+data/logs/*
+data/informe.html
+!data/**/.gitkeep

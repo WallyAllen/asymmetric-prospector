@@ -1,44 +1,78 @@
-# ⚙️ Plan de Automatización de Prospectos
+# ⚙️ Plan de automatización (v2)
 
-Este documento define el flujo de trabajo asíncrono para captar clientes sin usar SaaS de pago mensual. Todo corre de manera programática usando Python, Playwright/Scrapling y Gemini 3.1 Pro (Multimodal).
+Documento arquitectónico. El "cómo" ejecutable vive en `prospector/` y el "cómo se
+usa" en `README.md`; aquí queda por qué el sistema está diseñado así.
 
-## 1. Arquitectura del Flujo de Automatización
+## Principio rector: la asimetría
 
-La automatización consta de 4 etapas principales ejecutadas secuencialmente por un **Script Orquestador en Python**:
+El trabajo caro (mockups, desarrollo) **nunca** se hace por adelantado. Lo que se
+automatiza es la parte barata y repetible —encontrar, medir, demostrar, escribir—
+y el esfuerzo humano se reserva para quien ya levantó la mano.
 
-### Etapa 1: Extracción de Leads (Minería)
-- **Tecnología:** `scrapling-official` o scripts en `playwright` invocados desde Python.
-- **Acción:** Buscar en bases de datos públicas, Google Maps o directorios por nichos (ej. "clínicas de fisioterapia en Madrid").
-- **Output:** Un archivo de datos (`leads_crudos.csv` o SQLite) con Nombre del negocio, URL del sitio web, Email (raspeado de la web) y Teléfono.
+## Las cuatro etapas
 
-### Etapa 2: Auditoría Visual y Calificación
-- **Tecnología:** `playwright` (para tomar capturas) + Gemini 3.1 Pro (Vision/Multimodal).
-- **Acción:**
-  1. El script visita la URL del lead en background.
-  2. Toma una captura de pantalla completa de la página de inicio (desktop y mobile).
-  3. Envía la captura a la API de Gemini con un prompt estricto: *"Analiza este sitio web como experto en CRO. Identifica 1 problema crítico de UX, diseño o performance visual. Responde en JSON con el problema exacto y una puntuación de urgencia (1 a 10)."*
-- **Filtro:** Si el sitio ya es excelente (urgencia baja), se descarta para ahorrar recursos. Si es pobre (urgencia alta), avanza.
+### 1. Minado (`prospector/sources/`)
+Google Maps con Scrapling: negocios reales con nombre, teléfono y reseñas. La señal
+más valiosa que da Maps es la ausencia: **una ficha sin web es el prospecto de
+máxima puntuación**, porque no hay que convencer a nadie de que su web es mala.
 
-### Etapa 3: Generación del Primer Mensaje ("Anti-Slop")
-- **Tecnología:** API de Gemini + Directrices de la skill `humanizer`.
-- **Acción:** El script toma el problema identificado y redacta un correo altamente personalizado usando las plantillas de `templates/primer_mensaje.md`.
-- **Diferenciador (Prueba Visual):** El script en Python puede marcar la captura de pantalla obtenida en la Etapa 2 (ej. dibujando un recuadro rojo alrededor del menú roto con la librería `Pillow`) y adjuntarla o linkearla en el correo para probar que el análisis fue manual y real.
+Los directorios y agregadores (Cylex, Lawzana, rankings, redes sociales) se
+descartan por lista negra: no son clientes, son ruido. La deduplicación es por
+dominio registrable, así que dos URLs del mismo negocio son un solo lead.
 
-### Etapa 4: Envío Asíncrono
-- **Tecnología:** Librería nativa de Python (`smtplib` y `email.mime`) conectada vía contraseñas de aplicación (Gmail/Outlook).
-- **Acción:** Enviar los correos de manera programada a lo largo del día.
-- **Seguridad:** Implementar retrasos aleatorios (jitter) entre envíos (ej. de 7 a 20 minutos) y limitar el volumen (max 30-50 correos/día por cuenta) para asegurar un 99% de deliverability y evitar caer en Spam.
+Después, una pasada de contacto visita cada web buscando el correo en el HTML, en
+los `mailto:`, en el JSON-LD de schema.org, en las páginas de contacto y aviso
+legal, y desofuscando los "hola (arroba) negocio (punto) com".
 
-## 2. El Disparador Asimétrico (La Respuesta del Cliente)
+### 2. Auditoría (`prospector/audit/`)
+Dos capas, en este orden:
 
-El trabajo pesado de desarrollo web y creación de mockups avanzados **NUNCA** se ejecuta por adelantado.
+**Capa objetiva (gratis, siempre).** Playwright abre la web en escritorio (1440px)
+y en móvil real (390px, touch, UA de iPhone) y mide: estado HTTP, HTTPS, TTFB, LCP,
+CLS, peso y número de peticiones, `meta viewport`, desborde horizontal, tamaños de
+fuente, tamaño táctil de los botones, CTAs en la primera pantalla, formularios,
+`tel:` y WhatsApp, títulos y meta descripciones, imágenes sin `alt` y
+sobredimensionadas, popups fijos, items de menú, año del copyright y rastros de
+tecnología obsoleta. Las reglas de `rules.py` convierten cada medición en un
+`Finding` con tres piezas: **evidencia** (el dato duro), **argumento** (la
+traducción a dinero perdido) y **zona** (el rectángulo a marcar en la captura).
 
-- **Trigger:** El prospecto lee el correo, ve la prueba visual y responde: *"Me interesa, quiero ver cómo lo mejorarían".*
-- **Acción del Agente:** El Orquestador Antigravity instancia un subagente utilizando las skills de la carpeta `Landing`. Este agente tomará el mockup pre-diseñado para el nicho (en `Landing/nichos/*nichos/mockup`), lo adaptará con los datos del prospecto y generará un enlace (MVP desplegado en Vercel) en minutos.
-- **Cierre:** Se envía el link del MVP para deslumbrar al cliente y llevarlo a una llamada de cierre para el Setup Fee y el MRR.
+**Capa de juicio (IA, solo donde hay negocio).** Únicamente si el score objetivo
+supera el umbral, Gemini mira las dos capturas y la lista de mediciones. No busca
+el problema —ya está medido—: lo confirma, le pone palabras humanas y señala dónde
+mirar. Si contradice las métricas, el score baja. La IA nunca es punto único de
+fallo: sin clave, sin cuota o con respuesta inválida, el pipeline continúa.
 
-## 3. Hoja de Ruta de Desarrollo (Scripts a Crear)
-1. `01_extractor.py`: Modulo de minería con Scrapling.
-2. `02_auditor.py`: Módulo de captura de pantalla (Playwright) y consulta Multimodal a Gemini.
-3. `03_composer.py`: Ensamblaje del correo "Anti-Slop" y manipulación de imagen.
-4. `04_mailer.py`: Gestor de cola de correos y envío SMTP seguro.
+### 3. Redacción (`prospector/compose/`)
+Dos motores intercambiables (IA y plantillas) y **un único filtro anti-slop** por el
+que pasan los dos: fuera muletillas de bot, negritas de markdown, guiones largos y
+frases de agencia; tope de longitud; validación de que no quedaron marcadores sin
+rellenar. Si el borrador de la IA no pasa la validación, se usa el de plantilla.
+
+El correo lleva la captura anotada embebida: el recuadro rojo sobre su propia web es
+lo que separa este correo de los cincuenta que recibe al mes.
+
+### 4. Envío (`prospector/deliver/`)
+`smtplib` contra una cuenta real con contraseña de aplicación. Conexión abierta y
+cerrada **por correo** (mantenerla viva durante una pausa de 10 minutos la mataba),
+cuota diaria persistente, ventana horaria laborable, jitter de 6-14 minutos, lista
+de supresión y registro idempotente. Simula por defecto.
+
+## El disparador asimétrico
+
+El prospecto responde "quiero ver cómo lo mejoraríais" → recién ahí se instancia el
+agente que toma el mockup del nicho en `Landing/nichos/*/mockup`, lo adapta con los
+datos del prospecto y despliega un MVP en minutos. El enlace es la excusa para la
+llamada de cierre.
+
+## Decisiones que conviene no revertir
+
+- **El score no lo pone la IA.** Un modelo que "opina" que una web es mala genera
+  argumentos indefendibles en cuanto el prospecto responde. Un LCP de 6,4 s no se
+  discute.
+- **Rutas relativas en los datos.** Mover la carpeta del proyecto no puede romper
+  el histórico (ya pasó una vez).
+- **Idempotencia por `lead.id`.** Reejecutar cualquier etapa nunca duplica ni
+  reescribe trabajo ya hecho.
+- **Simular por defecto.** El único comando irreversible del sistema exige pedirlo
+  explícitamente.

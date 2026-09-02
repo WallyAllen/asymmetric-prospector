@@ -1,4 +1,8 @@
-scrapling[all]>=0.4.15
-playwright
-google-genai
-pillow
+# Núcleo del pipeline
+scrapling[all]>=0.4.15      # minado sigiloso (Google Maps, extracción de contactos)
+playwright>=1.44            # auditoría técnica y capturas multi-viewport
+pillow>=10.0                # anotación de capturas e informe
+google-genai>=0.3           # opcional: jurado visual y redacción con IA
+
+# Tras instalar:  python -m playwright install chromium
+#                 scrapling install
