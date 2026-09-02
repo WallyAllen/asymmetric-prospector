@@ -11,6 +11,7 @@ RAW_DIR = DATA_DIR / "01_raw"
 AUDITED_DIR = DATA_DIR / "02_audited"
 COMPOSED_DIR = DATA_DIR / "03_composed"
 SENT_DIR = DATA_DIR / "04_sent"
+WHATSAPP_DIR = DATA_DIR / "05_whatsapp"
 SHOTS_DIR = DATA_DIR / "screenshots"
 LOGS_DIR = DATA_DIR / "logs"
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -151,7 +152,7 @@ class Settings:
 
 
 def ensure_dirs() -> None:
-    for d in (RAW_DIR, AUDITED_DIR, COMPOSED_DIR, SENT_DIR, SHOTS_DIR, LOGS_DIR):
+    for d in (RAW_DIR, AUDITED_DIR, COMPOSED_DIR, SENT_DIR, WHATSAPP_DIR, SHOTS_DIR, LOGS_DIR):
         d.mkdir(parents=True, exist_ok=True)
 
 

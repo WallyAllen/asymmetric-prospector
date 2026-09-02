@@ -477,13 +477,41 @@ def redactar_todos(leads: list[Lead], cfg, forzar: bool = False) -> list[Lead]:
         if lead.estado in {"auditado", "listo"} and (forzar or lead.email_draft is None)
         and lead.contactable
     ]
-    sin_correo = [lead for lead in leads if lead.estado == "auditado" and not lead.contactable]
-    if sin_correo:
-        log.info("%d leads calificados no tienen email todavía (usa 'mine --enriquecer')", len(sin_correo))
+    # Sin web (o sin email hallado) pero con teléfono: no entran a la cola de
+    # correo, pero sí se redactan para el canal manual (ver redactar_whatsapp).
+    sin_correo_ni_tel = [
+        lead for lead in leads
+        if lead.estado == "auditado" and not lead.contactable and not lead.telefono
+    ]
+    if sin_correo_ni_tel:
+        log.info("%d leads calificados no tienen ni email ni teléfono: sin forma de contacto",
+                  len(sin_correo_ni_tel))
 
     for lead in candidatos:
         borrador = redactar(lead, cfg.compose, cliente, plantilla)
         lead.email_draft = borrador
         lead.estado = "listo"
         log.info("✎ %s · «%s» (%s)", lead.etiqueta, borrador.asunto, borrador.generado_por)
+    return leads
+
+
+def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False) -> list[Lead]:
+    """Redacta para el segmento sin email: mismo motor, mismo texto, pero
+    termina en un archivo de texto para contactar a mano por WhatsApp, no en
+    la cola de envío por correo (ver deliver/whatsapp.py para el volcado)."""
+    from ..ai import get_client
+
+    plantilla = cargar_plantilla()
+    cliente = get_client(cfg.ai) if cfg.compose.use_ai and cfg.ai.enabled else None
+
+    candidatos = [
+        lead for lead in leads
+        if lead.estado in {"auditado", "listo_whatsapp"} and (forzar or lead.email_draft is None)
+        and not lead.contactable and lead.telefono
+    ]
+    for lead in candidatos:
+        borrador = redactar(lead, cfg.compose, cliente, plantilla)
+        lead.email_draft = borrador
+        lead.estado = "listo_whatsapp"
+        log.info("✎ %s (WhatsApp, %s) · «%s»", lead.etiqueta, lead.telefono, borrador.asunto)
     return leads

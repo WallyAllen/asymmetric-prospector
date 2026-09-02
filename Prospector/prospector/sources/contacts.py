@@ -109,15 +109,28 @@ async def enrich_contacts(
     """
     from scrapling.fetchers import AsyncStealthySession
 
-    objetivos = [lead for lead in leads if lead.url and not lead.email]
+    from ..utils import is_directory
+
+    # Un directorio no es un negocio: visitarlo no da un email útil y, peor,
+    # es justo el tipo de sitio (mucho tráfico de bots, anti-scraping) que
+    # más se cuelga. Ya está identificado en otras partes del pipeline; acá
+    # nunca se chequeaba, así que enrich igual perdía tiempo en ellos.
+    objetivos = [lead for lead in leads if lead.url and not lead.email and not is_directory(lead.url)]
     if not objetivos:
         return leads
+
+    # Techo duro por lead: si un fetch individual no respeta su propio
+    # timeout (pasó con un directorio real), esto evita que UN sitio
+    # colgado bloquee el resto de la ronda para siempre.
+    techo_s = max(60.0, (cfg.nav_timeout_ms / 1000) * (max_paginas + 1))
 
     log.info("Buscando correo público en %d webs", len(objetivos))
     async with AsyncStealthySession(headless=cfg.headless, humanize=False, disable_resources=True) as session:
         for lead in objetivos:
             try:
-                await _enrich_one(session, lead, cfg, max_paginas)
+                await asyncio.wait_for(_enrich_one(session, lead, cfg, max_paginas), timeout=techo_s)
+            except asyncio.TimeoutError:
+                log.warning("%s: se colgó más de %.0fs, se salta", lead.url, techo_s)
             except Exception as exc:  # noqa: BLE001 - un fallo no debe tumbar la ronda
                 log.debug("Sin contacto en %s: %s", lead.url, exc)
             if on_lead_done is not None:

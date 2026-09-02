@@ -8,9 +8,9 @@ from __future__ import annotations
 import asyncio
 
 from .audit import auditar
-from .compose import redactar_todos
+from .compose import redactar_todos, redactar_whatsapp
 from .config import (AUDITED_FILE, COMPOSED_FILE, RAW_FILE, Settings, ensure_dirs, settings)
-from .deliver import enviar
+from .deliver import enviar, exportar_whatsapp
 from .logging_setup import get_logger
 from .models import Lead
 from .sources import enrich_contacts, mine_google_maps, mine_search_engine
@@ -70,7 +70,13 @@ def enriquecer_contactos(cfg: Settings = settings) -> list[Lead]:
     """Segunda pasada de contacto sobre lo ya minado."""
     ensure_dirs()
     leads = load_leads(RAW_FILE)
-    asyncio.run(enrich_contacts(leads, cfg.mining))
+
+    async def _guardar_progreso(leads_actuales: list) -> None:
+        # Sin esto, si el proceso se corta a mitad de camino (Ctrl+C, timeout,
+        # corte de red) se pierde CADA email ya encontrado hasta ese momento.
+        save_leads(RAW_FILE, merge_leads(load_leads(RAW_FILE), leads_actuales))
+
+    asyncio.run(enrich_contacts(leads, cfg.mining, on_lead_done=_guardar_progreso))
     save_leads(RAW_FILE, leads)
     _resumen(leads, "Enriquecido")
     return leads
@@ -103,6 +109,8 @@ def redactar_correos(cfg: Settings = settings, forzar: bool = False) -> list[Lea
     ensure_dirs()
     leads = merge_leads(load_leads(COMPOSED_FILE), load_leads(AUDITED_FILE))
     redactar_todos(leads, cfg, forzar=forzar)
+    redactar_whatsapp(leads, cfg, forzar=forzar)
+    exportar_whatsapp(leads)
     save_leads(COMPOSED_FILE, leads)
     _resumen(leads, "Redacción")
     return leads
