@@ -365,7 +365,12 @@ def botones_pequenos(res: ProbeResult) -> Finding | None:
 @regla
 def sin_telefono_pulsable(res: ProbeResult) -> Finding | None:
     met = res.metrics
-    if not res.ok or met.tiene_tel or not (met.tiene_formulario or met.tiene_whatsapp):
+    # El WhatsApp YA resuelve "contacto rápido desde el móvil": pedir un
+    # tel: además de eso es nitpicking, no un defecto real (y decirle a
+    # alguien "tu botón no se puede pulsar" cuando el de WhatsApp funciona
+    # perfecto es un argumento falso que se detecta a la primera mirada).
+    # Esto solo importa cuando la única vía de contacto es un formulario.
+    if not res.ok or met.tiene_tel or met.tiene_whatsapp or not met.tiene_formulario:
         return None
     return Finding(
         rule_id="sin_tel_movil",
@@ -374,10 +379,11 @@ def sin_telefono_pulsable(res: ProbeResult) -> Finding | None:
         peso=4,
         categoria="moderado",
         viewport="mobile",
-        evidencia="Ningún enlace tel: en la página",
+        evidencia="Ningún enlace tel: ni de WhatsApp en la página, solo formulario",
         argumento=(
-            "Desde el móvil el teléfono no es pulsable: hay que memorizarlo y marcarlo a mano. "
-            "Un enlace de llamada directa suele ser la mejora más rentable de toda la web."
+            "Desde el móvil, la única forma de contactar es completar un formulario: no hay teléfono "
+            "ni WhatsApp para escribir directo. Un botón de llamada o de WhatsApp suele ser "
+            "la mejora más rentable de toda la web."
         ),
     )
 
