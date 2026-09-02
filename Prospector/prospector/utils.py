@@ -183,6 +183,20 @@ def lead_id(url: str | None, name: str = "", email: str | None = None) -> str:
     return f"noweb-{slugify(name, 32)}-{hashlib.sha1(seed.encode()).hexdigest()[:8]}"
 
 
+def dialecto_por_url(url: str | None) -> str:
+    """'voseo' (rioplatense, vos) por defecto; 'tuteo' solo para dominios .es.
+
+    Sender y plantillas son de Argentina, así que rioplatense es el default
+    razonable cuando no se puede inferir el país (sin URL, TLD genérico).
+    Solo se detecta explícitamente el caso peninsular porque fue el que se
+    coló mezclado con leads argentinos en la primera corrida.
+    """
+    host = registrable_domain(url)
+    if host.endswith(".es") or host == "es":
+        return "tuteo"
+    return "voseo"
+
+
 def truncate(text: str, limit: int = 280) -> str:
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"

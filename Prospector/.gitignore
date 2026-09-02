@@ -15,6 +15,7 @@ data/01_raw/*.json
 data/02_audited/*.json
 data/03_composed/*.json
 data/04_sent/*.json
+data/demo/*.json
 data/screenshots/*
 data/logs/*
 data/informe.html

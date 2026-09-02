@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Minador sin browser: búsqueda via Google Maps API simulation.
-Crea leads ficticios pero realistas para demostración del pipeline.
+Crea leads FICTICIOS solo para demostrar el formato del pipeline.
+
+ADVERTENCIA: esto no es minería real. El resultado se escribe en
+data/demo/, nunca en data/01_raw/, para que no pueda colarse en
+`prospector audit` ni mezclarse con leads reales. No lo apuntes
+manualmente a leads_crudos.json.
 """
 import json
 from datetime import datetime
@@ -79,14 +84,16 @@ leads_demo = [
     }
 ]
 
-# Guardar en data/01_raw
-output_file = Path("data/01_raw/leads_minados.json")
+# Deliberadamente FUERA de data/01_raw/: nunca debe poder confundirse
+# con una corrida real ni quedar disponible para `prospector audit`.
+output_file = Path("data/demo/leads_demo.json")
 output_file.parent.mkdir(parents=True, exist_ok=True)
 
-with open(output_file, "w") as f:
+with open(output_file, "w", encoding="utf-8") as f:
     json.dump(leads_demo, f, indent=2, ensure_ascii=False)
 
-print(f"✅ {len(leads_demo)} leads creados en: {output_file}")
+print(f"✅ {len(leads_demo)} leads DE PRUEBA creados en: {output_file}")
+print("   (ficticios — no auditar ni componer correos reales a partir de esto)")
 print()
 for lead in leads_demo:
     print(f"  • {lead['nombre']}")

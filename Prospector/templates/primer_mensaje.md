@@ -21,7 +21,7 @@ Estaba buscando servicios en la zona y entré a su web. Noté que [Problema Espe
 
 Sé que esto les está haciendo perder contactos. Me tomé el atrevimiento de pensar cómo se vería una versión optimizada puramente enfocada en que el cliente contacte más rápido usando estándares modernos.
 
-¿Te oponés a que arme un prototipo rápido (sin compromiso) y te mande el enlace para que lo veas?
+Me lleva un par de horas armar un prototipo: ¿te sirve si te mando el enlace para que lo veas? Sin compromiso.
 
 Saludos,
 [Tu Nombre]

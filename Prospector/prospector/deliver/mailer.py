@@ -65,6 +65,12 @@ def construir_mensaje(lead: Lead, cfg: MailSettings) -> EmailMessage:
     mensaje.set_content(borrador.cuerpo)
 
     adjunto = to_absolute(borrador.adjunto)
+    if borrador.adjunto and not (adjunto and adjunto.exists()):
+        # No debería pasar (writer.py ya solo guarda adjunto si el archivo
+        # existe), pero si el archivo se borró entre compose y send, mejor
+        # que quede en el log en vez de mandarse en silencio sin captura.
+        log.warning("%s: adjunto '%s' ya no existe en disco, se envía sin él",
+                    lead.etiqueta, borrador.adjunto)
     bloque_imagen = ""
     cid = None
     if adjunto and adjunto.exists():

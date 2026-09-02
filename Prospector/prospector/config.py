@@ -103,6 +103,10 @@ class ComposeSettings:
     sender_name: str = field(default_factory=lambda: _env("SENDER_NAME", "Felipe"))
     sender_role: str = field(default_factory=lambda: _env("SENDER_ROLE", "Diseño y CRO de landing pages"))
     sender_site: str = field(default_factory=lambda: _env("SENDER_SITE", ""))
+    # Una línea de prueba social REAL y verificable (p. ej. "hice esto mismo
+    # para un estudio contable acá en La Plata"). Vacío por defecto: nunca se
+    # inventa una referencia, solo se usa si vos la completás en .env.
+    sender_proof: str = field(default_factory=lambda: _env("SENDER_PROOF", ""))
     max_findings_in_email: int = field(default_factory=lambda: _env_int("COMPOSE_MAX_FINDINGS", 2))
 
 

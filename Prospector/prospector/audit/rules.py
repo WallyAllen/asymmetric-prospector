@@ -129,8 +129,8 @@ def sin_viewport(res: ProbeResult) -> Finding | None:
         viewport="mobile",
         evidencia="Falta la etiqueta meta viewport: el móvil renderiza la versión de escritorio encogida",
         argumento=(
-            "Más de la mitad de tus visitas llegan desde el móvil y ven la web de escritorio miniaturizada, "
-            "con el texto ilegible y obligadas a hacer zoom. La mayoría cierra sin llamar."
+            "Quien entra desde el celular ve la web de escritorio miniaturizada, con el texto ilegible y "
+            "obligado a hacer zoom para leer cualquier cosa. Eso es fricción antes de la primera frase."
         ),
         zona=_rect(res, "fold", movil=True),
     )
@@ -201,8 +201,8 @@ def carga_lenta(res: ProbeResult) -> Finding | None:
         categoria=categoria,
         evidencia=f"LCP {segundos:.1f} s medido en una conexión normal",
         argumento=(
-            f"Tu web tarda {segundos:.1f} segundos en mostrar lo importante. "
-            f"Una de cada cuatro personas abandona antes de que aparezca. {remate}"
+            f"Tu web tarda {segundos:.1f} segundos en mostrar lo importante, y eso lo medimos nosotros "
+            f"entrando igual que entraría cualquiera. {remate}"
         ),
         zona=_rect(res, "imagenPrincipal"),
     )

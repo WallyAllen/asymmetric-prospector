@@ -44,6 +44,8 @@ _CONSENT_SELECTORS = (
     'button[aria-label*="Accept all"]',
     'form[action*="consent"] button',
     'button:has-text("Aceptar todo")',
+    'button:has-text("Accept all")',
+    'button[jsname="b3VHJd"]',   # botón "Aceptar todo" del muro de consentimiento de Google
 )
 
 
@@ -88,7 +90,13 @@ def _first(node, *selectors: str) -> str | None:
 
 
 def _parse_card(card, nicho: str) -> Lead | None:
-    """Extrae un lead de una tarjeta del panel de resultados."""
+    """Extrae un lead de una tarjeta del panel de resultados.
+
+    El nombre se busca en varias fuentes porque Google no expone siempre la
+    misma: el más fiable es el aria-label del propio enlace (lo lee un lector
+    de pantalla, así que Google lo mantiene), pero se cae a su texto visible
+    y a un par de clases alternativas por si esa etiqueta falta.
+    """
     try:
         anchor = card.css_first('a[href*="/maps/place/"]')
     except Exception:  # noqa: BLE001
@@ -98,8 +106,16 @@ def _parse_card(card, nicho: str) -> Lead | None:
 
     nombre = (anchor.attrib.get("aria-label") or "").strip()
     if not nombre:
-        nombre = _first(card, "div.qBF1Pd::text", "div.fontHeadlineSmall::text") or ""
+        nombre = _first(
+            card,
+            "span.xxVWCe::text", "div.qBF1Pd::text", "div.fontHeadlineSmall::text",
+        ) or ""
     if not nombre:
+        texto_ancla = getattr(anchor, "text", None)
+        nombre = (str(texto_ancla).strip() if texto_ancla else "")
+    if not nombre:
+        log.debug("Tarjeta sin nombre extraíble (posible cambio de layout de Maps): %s",
+                   (anchor.attrib.get("href") or "")[:120])
         return None
 
     place_url = anchor.attrib.get("href")
@@ -121,11 +137,25 @@ def _parse_card(card, nicho: str) -> Lead | None:
 
     texto = " ".join((card.get_all_text() or "").split()) if hasattr(card, "get_all_text") else ""
     rating, resenas = None, None
-    match = re.search(r"([0-5][.,]\d)\s*\(([\d.,]+)\)", texto)
-    if match:
-        rating = float(match.group(1).replace(",", "."))
+    # El rating es más fiable por el aria-label de su propio span ("4,5 estrellas")
+    # que por regex sobre el texto: Maps no siempre muestra el nº de reseñas al
+    # lado, así que exigir ambos juntos (como antes) perdía el rating igual.
+    try:
+        estrellas = card.css_first('span[aria-label*="estrella"], span[aria-label*="star"]')
+    except Exception:  # noqa: BLE001
+        estrellas = None
+    rating_match = None
+    if estrellas is not None:
+        rating_match = re.search(r"([0-5][.,]\d)", estrellas.attrib.get("aria-label") or "")
+    if not rating_match:
+        rating_match = re.search(r"([0-5][.,]\d)\s*(?:\(|estrellas|stars|$)", texto)
+    if rating_match:
+        rating = float(rating_match.group(1).replace(",", "."))
+
+    resenas_match = re.search(r"\(([\d.,]+)\)", texto)
+    if resenas_match:
         try:
-            resenas = int(re.sub(r"\D", "", match.group(2)))
+            resenas = int(re.sub(r"\D", "", resenas_match.group(1)))
         except ValueError:
             resenas = None
 
@@ -201,7 +231,10 @@ async def mine_google_maps(
             break
 
     if not tarjetas:
-        log.warning("Sin tarjetas parseables (Maps cambió el layout o hubo bloqueo)")
+        log.warning(
+            "Sin tarjetas parseables (Maps cambió el layout, hubo bloqueo por "
+            "bot, o quedó atascado en el muro de consentimiento)"
+        )
         return []
 
     leads = []
@@ -210,8 +243,19 @@ async def mine_google_maps(
         if lead:
             leads.append(lead)
 
+    descartadas = len(tarjetas) - len(leads)
+    if tarjetas and descartadas / len(tarjetas) > 0.3:
+        log.warning(
+            "%d de %d tarjetas se descartaron sin nombre extraíble: revisar si "
+            "Maps cambió el layout (activa --visible para inspeccionar)",
+            descartadas, len(tarjetas),
+        )
+
     leads = _dedupe(leads)[: cfg.max_leads]
     sin_web = sum(1 for lead in leads if not lead.url)
+    sin_nombre = sum(1 for lead in leads if not lead.nombre)
+    if sin_nombre:
+        log.warning("%d leads quedaron sin nombre de negocio", sin_nombre)
     log.info("Maps: %d negocios (%d sin web propia)", len(leads), sin_web)
     return leads
 
