@@ -45,12 +45,25 @@ def _contenido(lead: Lead) -> str:
     )
 
 
+def _limpiar_huerfanos(vigentes: set[str]) -> None:
+    """Borra .txt de leads que ya no califican (p. ej. un re-audit bajó el
+    score bajo el umbral). Sin esto, un lead descartado se queda en la
+    carpeta como si todavía estuviera listo para contactar."""
+    if not WHATSAPP_DIR.exists():
+        return
+    for archivo in WHATSAPP_DIR.glob("*.txt"):
+        if archivo.name != INDICE_FILE and archivo.name not in vigentes:
+            archivo.unlink()
+
+
 def exportar(leads: list[Lead]) -> list[Lead]:
     """Escribe un .txt por lead listo para WhatsApp más un índice ordenado
     por score. Idempotente: se reescribe todo en cada corrida a partir del
     estado actual, así el índice nunca queda desactualizado."""
     listos = [l for l in leads if l.estado == "listo_whatsapp" and l.email_draft]
+    _limpiar_huerfanos({_archivo(l).name for l in listos})
     if not listos:
+        (WHATSAPP_DIR / INDICE_FILE).unlink(missing_ok=True)
         return leads
 
     WHATSAPP_DIR.mkdir(parents=True, exist_ok=True)

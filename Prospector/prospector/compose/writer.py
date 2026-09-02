@@ -184,6 +184,15 @@ def _saludo(lead: Lead) -> str:
     return f"Hola, equipo de {corto},"
 
 
+def _termino_busqueda(nicho: str | None) -> str:
+    """El nicho es la query de minado tal cual se tipeó ("veterinarias la
+    plata", sin preposición) — insertarla como objeto directo de "buscando"
+    exige que sea una frase gramatical y a veces no lo es. Como cita literal
+    de lo tipeado en el buscador no hace falta que lo sea: así se tipean
+    las búsquedas."""
+    return f'"{nicho}"' if nicho else "servicios de la zona"
+
+
 def _primera_minuscula(texto: str) -> str:
     """Baja solo la inicial, no la cadena entera (bajar todo rompe "Google",
     los saltos de oración y cualquier nombre propio que venga después)."""
@@ -263,7 +272,7 @@ def componer_por_plantilla(
         asunto = random.choice(ASUNTOS_CON_WEB).format(nombre=nombre, dominio=dominio, dispositivo=dispositivo)
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"Intenté entrar a {dominio} buscando {lead.nicho or 'servicios de la zona'} y la página no cargó. "
+            f"Busqué {_termino_busqueda(lead.nicho)} e intenté entrar a {dominio}, pero la página no cargó. "
             f"Probé de nuevo por si era algo puntual, pero el resultado fue el mismo.\n\n"
             f"Quien te busca y se encuentra eso no vuelve a intentarlo: entra al siguiente resultado. "
             f"Si el dominio o el hosting vencieron, o hay un error de configuración, es de las cosas más rápidas "
@@ -286,7 +295,7 @@ def componer_por_plantilla(
         asunto = random.choice(ASUNTOS_CON_WEB).format(nombre=nombre, dominio=dominio, dispositivo=dispositivo)
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"Entré en {dominio} buscando {lead.nicho or 'servicios de la zona'} y me quedé mirando la "
+            f"Busqué {_termino_busqueda(lead.nicho)} y entré en {dominio}: me quedé mirando la "
             f"primera pantalla{apertura_social}. {cuerpo_problema}{extra}\n\n"
             f"{frase_adjunto}"
             f"Me dedico a rehacer justo esa parte: misma marca, misma información, ordenada para que "

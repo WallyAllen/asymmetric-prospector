@@ -127,6 +127,13 @@ def merge_leads(existing: Iterable[Lead], nuevos: Iterable[Lead]) -> list[Lead]:
 
         if actual.audit is None and nuevo.audit is not None:
             actual.audit = nuevo.audit
+        elif actual.audit and nuevo.audit and nuevo.audit.auditado_el > actual.audit.auditado_el:
+            # Un re-audit --forzar mide de nuevo un sitio EN VIVO: si vino
+            # con fecha más nueva, reemplaza al viejo en vez de conservarlo
+            # solo porque "ya había uno". Antes esto dejaba leads_listos.json
+            # con un score/hallazgos viejos para siempre, aunque el sitio ya
+            # se hubiera re-auditado con datos frescos.
+            actual.audit = nuevo.audit
         if actual.email_draft is None and nuevo.email_draft is not None:
             actual.email_draft = nuevo.email_draft
         if not actual.enviado_el and nuevo.enviado_el:

@@ -10,7 +10,7 @@ import asyncio
 from .audit import auditar
 from .compose import redactar_todos, redactar_whatsapp
 from .config import (AUDITED_FILE, COMPOSED_FILE, RAW_FILE, Settings, ensure_dirs, settings)
-from .deliver import enviar, exportar_whatsapp
+from .deliver import enviar, exportar_preview, exportar_whatsapp
 from .logging_setup import get_logger
 from .models import Lead
 from .sources import enrich_contacts, mine_google_maps, mine_search_engine
@@ -110,6 +110,7 @@ def redactar_correos(cfg: Settings = settings, forzar: bool = False) -> list[Lea
     leads = merge_leads(load_leads(COMPOSED_FILE), load_leads(AUDITED_FILE))
     redactar_todos(leads, cfg, forzar=forzar)
     redactar_whatsapp(leads, cfg, forzar=forzar)
+    exportar_preview(leads)
     exportar_whatsapp(leads)
     save_leads(COMPOSED_FILE, leads)
     _resumen(leads, "Redacción")

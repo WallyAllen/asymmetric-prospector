@@ -201,7 +201,7 @@ def carga_lenta(res: ProbeResult) -> Finding | None:
         categoria=categoria,
         evidencia=f"LCP {segundos:.1f} s medido en una conexión normal",
         argumento=(
-            f"Tu web tarda {segundos:.1f} segundos en mostrar lo importante, y eso lo medimos nosotros "
+            f"Tu web tarda {segundos:.1f} segundos en mostrar lo importante, y eso lo medí yo mismo "
             f"entrando igual que entraría cualquiera. {remate}"
         ),
         zona=_rect(res, "imagenPrincipal"),
