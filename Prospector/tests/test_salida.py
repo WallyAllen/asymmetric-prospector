@@ -48,9 +48,11 @@ class TestSalidas(unittest.TestCase):
         tiene que recortar y ampliar alrededor de la zona del problema."""
         origen = _captura_falsa(self.tmp / "fold.png")
         _, _, hallazgos = self._hallazgos()
-        destino = anotar(origen, self.tmp / "anotada.png", hallazgos, pie="Sin llamada a la acción")
-        self.assertIsNotNone(destino)
+        resultado = anotar(origen, self.tmp / "anotada.png", hallazgos, pie="Sin llamada a la acción")
+        self.assertIsNotNone(resultado)
+        destino, dibujados = resultado
         self.assertTrue(destino.exists())
+        self.assertGreater(dibujados, 0, "captura_marcada depende de este conteo")
 
         from PIL import Image
 
@@ -77,7 +79,7 @@ class TestSalidas(unittest.TestCase):
             categoria="killer", evidencia="0 CTAs",
             argumento="x", zona={"x": 0, "y": 0, "width": 1440, "height": 900},
         )
-        destino = anotar(origen, self.tmp / "anotada2.png", [hallazgo], pie="Sin CTA")
+        destino, _dibujados = anotar(origen, self.tmp / "anotada2.png", [hallazgo], pie="Sin CTA")
         from PIL import Image
 
         antes = Image.open(origen)

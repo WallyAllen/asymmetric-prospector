@@ -167,6 +167,13 @@ def _saludo(lead: Lead) -> str:
     nombre = (lead.nombre or "").strip()
     if not nombre:
         return "Hola,"
+    # El chequeo de dominio va ANTES de partir por guiones: un dominio con
+    # guion adentro ("vet-app.com.ar", "veterinarias-argentina24h.com", que
+    # el buscador usa como nombre a falta de uno real) se hacía pedazos con
+    # el separador de abajo, y el primer pedazo ("vet", "veterinarias") ya
+    # no tenía el punto que lo delataba como dominio.
+    if _PARECE_DOMINIO.match(nombre):
+        return "Hola,"
     corto = re.split(r"[|·,\-–]", nombre)[0].strip()
     # Cuando el minado no logró un nombre real, `nombre` a veces es el propio
     # dominio (p. ej. por un fallback en el parser de Maps). Saludar a una
@@ -420,19 +427,21 @@ def componer_con_ia(
 # ─────────────────────────────── Orquestación ───────────────────────────────
 
 def _ruta_adjunto(lead: Lead) -> tuple[str | None, bool]:
-    """Candidato a adjunto y si es la versión con la zona marcada en rojo.
+    """Candidato a adjunto y si tiene de verdad un recuadro rojo dibujado.
 
     La anotada es la estrella; si no existe, se cae a la captura cruda del
-    fold. Distinguir cuál es cuál importa para el texto: prometer "la zona
-    marcada" cuando lo único que hay es la captura sin anotar es la misma
-    clase de mentira detectable que prometer un adjunto que no existe.
+    fold. `captura_marcada` (ver Audit/runner.py) es la fuente de verdad de
+    si HUBO un recuadro dibujado: una "anotada" puede existir sin ningún
+    recuadro (cuando no hubo zona detectable, solo se le puso un pie de
+    foto), y prometer "la zona marcada" sobre esa imagen es la misma
+    mentira detectable que prometer un adjunto que no existe.
     """
     if not lead.audit:
         return None, False
     capturas = lead.audit.capturas
     marcada = capturas.get("principal") or capturas.get("anotada")
     if marcada:
-        return marcada, True
+        return marcada, bool(lead.audit.captura_marcada)
     return capturas.get("desktop_fold") or None, False
 
 

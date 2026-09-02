@@ -97,6 +97,11 @@ class Audit(_Serializable):
     metrics: Metrics = field(default_factory=Metrics)
     capturas: dict[str, str] = field(default_factory=dict)   # rutas RELATIVAS al proyecto
     vision: dict[str, Any] = field(default_factory=dict)     # dictamen del jurado IA
+    # True solo si la captura "anotada" tiene de verdad un recuadro rojo
+    # dibujado (hubo una zona detectable). Sin esto, "anotada" solo
+    # significaba "se le puso un pie de foto", y el correo podía prometer
+    # "la zona marcada" sobre una imagen sin ninguna marca.
+    captura_marcada: bool = False
     auditado_el: str = field(default_factory=_now)
 
     @classmethod
@@ -109,6 +114,7 @@ class Audit(_Serializable):
             metrics=Metrics.from_dict(data.get("metrics", {})),
             capturas=dict(data.get("capturas", {})),
             vision=dict(data.get("vision", {})),
+            captura_marcada=bool(data.get("captura_marcada", False)),
             auditado_el=data.get("auditado_el", _now()),
         )
 

@@ -130,13 +130,18 @@ def anotar(
     hallazgos: list[Finding],
     movil: bool = False,
     pie: str | None = None,
-) -> Path | None:
+) -> tuple[Path, int] | None:
     """Recorta la zona del problema principal, amplía y marca en rojo.
 
     Solo el hallazgo más prioritario decide el recorte; si otros hallazgos
     con zona caen dentro de ese recorte, también se numeran. Sin ninguna
     zona utilizable, se usa la captura completa tal cual (mejor eso que
-    inventar un recorte sin nada que señalar).
+    inventar un recorte sin nada que señalar) — pero eso significa que a
+    veces no se dibuja ningún recuadro, solo el pie de foto. El segundo
+    valor del tuple (cuántos recuadros se dibujaron de verdad) es lo que
+    decide si el correo puede decir "con la zona marcada" o no: prometer
+    una marca que no está ahí es la misma mentira detectable que prometer
+    un adjunto que no existe.
     """
     try:
         from PIL import Image, ImageDraw
@@ -248,7 +253,7 @@ def anotar(
     imagen.save(destino, "PNG", optimize=True)
     log.debug("Captura anotada: %s (%s, %d marca%s)", destino.name,
               "recortada" if recorte else "completa", dibujados, "" if dibujados == 1 else "s")
-    return destino
+    return destino, dibujados
 
 
 def componer_comparativa(desktop: Path, mobile: Path, destino: Path) -> Path | None:

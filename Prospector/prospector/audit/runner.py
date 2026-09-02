@@ -127,7 +127,10 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
     destino = SHOTS_DIR / _slug(lead) / "anotada.png"
     resultado = anotar(Path(origen), destino, prioridad, movil=False, pie=pie)
     if resultado:
-        auditoria.capturas["anotada"] = to_relative(resultado) or ""
+        ruta, dibujados = resultado
+        auditoria.capturas["anotada"] = to_relative(ruta) or ""
+        if dibujados > 0:
+            auditoria.captura_marcada = True
 
     movil = res.capturas.get("mobile_fold")
     hallazgos_movil = [h for h in prioridad if h.viewport == "mobile"]
@@ -138,7 +141,10 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
             pie=hallazgos_movil[0].argumento,
         )
         if resultado_movil:
-            auditoria.capturas["anotada_movil"] = to_relative(resultado_movil) or ""
+            ruta_movil, dibujados_movil = resultado_movil
+            auditoria.capturas["anotada_movil"] = to_relative(ruta_movil) or ""
+            if dibujados_movil > 0:
+                auditoria.captura_marcada = True
 
     # La captura que se adjunta al correo es la que ilustra el hallazgo principal:
     # si el defecto más grave es de móvil, se manda la del móvil.
