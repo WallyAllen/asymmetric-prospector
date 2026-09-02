@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import mimetypes
 import random
+import re
 import smtplib
 import ssl
 import time
@@ -38,12 +39,22 @@ HTML_WRAPPER = """\
 </div></body></html>"""
 
 
+_URL_RE = re.compile(r"https?://\S+")
+
+
 def _texto_a_html(texto: str) -> str:
     from html import escape
 
+    def _linkear(parrafo_escapado: str) -> str:
+        # Se linkea DESPUÉS de escapar: un '&' en la URL ya viene como
+        # '&amp;', que sigue siendo válido dentro de un atributo href.
+        return _URL_RE.sub(lambda m: f'<a href="{m.group(0)}" style="color:#1a56db;">{m.group(0)}</a>',
+                            parrafo_escapado)
+
     parrafos = [p.strip() for p in texto.split("\n\n") if p.strip()]
     return "".join(
-        f'<p style="margin:0 0 14px 0;">{escape(p).replace(chr(10), "<br>")}</p>' for p in parrafos
+        f'<p style="margin:0 0 14px 0;">{_linkear(escape(p).replace(chr(10), "<br>"))}</p>'
+        for p in parrafos
     )
 
 
