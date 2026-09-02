@@ -125,20 +125,28 @@ async def enrich_contacts(
     techo_s = max(60.0, (cfg.nav_timeout_ms / 1000) * (max_paginas + 1))
 
     log.info("Buscando correo público en %d webs", len(objetivos))
-    async with AsyncStealthySession(headless=cfg.headless, humanize=False, disable_resources=True) as session:
-        for lead in objetivos:
+
+    async def _con_sesion_propia(lead: Lead) -> None:
+        # Una sesión NUEVA por lead, no una compartida para todo el lote: si
+        # una web deja el navegador en mal estado (pasó con una navegación
+        # de fragmento raro), que se pudra esa sesión sola y no arrastre a
+        # los 12 leads siguientes con ella.
+        async with AsyncStealthySession(headless=cfg.headless, humanize=False, disable_resources=True) as session:
+            await _enrich_one(session, lead, cfg, max_paginas)
+
+    for lead in objetivos:
+        try:
+            await asyncio.wait_for(_con_sesion_propia(lead), timeout=techo_s)
+        except asyncio.TimeoutError:
+            log.warning("%s: se colgó más de %.0fs, se salta", lead.url, techo_s)
+        except Exception as exc:  # noqa: BLE001 - un fallo no debe tumbar la ronda
+            log.debug("Sin contacto en %s: %s", lead.url, exc)
+        if on_lead_done is not None:
             try:
-                await asyncio.wait_for(_enrich_one(session, lead, cfg, max_paginas), timeout=techo_s)
-            except asyncio.TimeoutError:
-                log.warning("%s: se colgó más de %.0fs, se salta", lead.url, techo_s)
-            except Exception as exc:  # noqa: BLE001 - un fallo no debe tumbar la ronda
-                log.debug("Sin contacto en %s: %s", lead.url, exc)
-            if on_lead_done is not None:
-                try:
-                    await on_lead_done(leads)
-                except Exception as exc:  # noqa: BLE001
-                    log.debug("Error guardando progreso: %s", exc)
-            await asyncio.sleep(0.5)
+                await on_lead_done(leads)
+            except Exception as exc:  # noqa: BLE001
+                log.debug("Error guardando progreso: %s", exc)
+        await asyncio.sleep(0.5)
     return leads
 
 
@@ -153,6 +161,12 @@ async def _enrich_one(session, lead: Lead, cfg, max_paginas: int) -> None:
         candidatas: list[str] = []
         try:
             for href in pagina.xpath(CONTACT_LINK_XPATH).getall()[:4]:
+                # Un href "#contact" apunta a un ancla dentro de la MISMA
+                # página, no a un documento nuevo: navegar ahí confundió a
+                # Playwright y dejó la sesión colgada para todo lo que
+                # seguía en la misma corrida.
+                if not href or href.strip().startswith("#"):
+                    continue
                 destino = urljoin(lead.url, href)
                 if destino not in vistas and domain_of(destino) == domain_of(lead.url):
                     vistas.add(destino)

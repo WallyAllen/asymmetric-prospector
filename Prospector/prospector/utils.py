@@ -52,8 +52,10 @@ PLATFORM_MARKERS = ("business.site", "negocio.site", "sites.google.com", "wixsit
 EMAIL_BLOCKLIST_DOMAINS = {
     "sentry.io", "example.com", "domain.com", "email.com", "wixpress.com",
     "godaddy.com", "wordpress.org", "sentry-next.wixpress.com", "your-domain.com",
+    "misitio.com", "misitio.com.ar", "tudominio.com", "tuempresa.com",
 }
-EMAIL_BLOCKLIST_PREFIXES = ("noreply", "no-reply", "donotreply", "postmaster", "mailer-daemon")
+EMAIL_BLOCKLIST_PREFIXES = ("noreply", "no-reply", "donotreply", "postmaster", "mailer-daemon",
+                             "ejemplo", "example", "test", "tuemail", "usuario")
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico")
 
 
