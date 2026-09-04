@@ -114,6 +114,14 @@ class GeminiClient:
                     espera = min(60, 8 * intento)
                     log.warning("Cuota de Gemini agotada; esperando %ds", espera)
                     time.sleep(espera)
+                elif "UNAVAILABLE" in mensaje or "503" in mensaje:
+                    # "Alta demanda": sobrecarga transitoria del lado de Google,
+                    # no un error nuestro. Se recupera sola, pero necesita más
+                    # espera que un error genérico -- 1.5s no alcanza para que
+                    # baje la carga del modelo.
+                    espera = min(45, 10 * intento)
+                    log.warning("Gemini con alta demanda (503); esperando %ds", espera)
+                    time.sleep(espera)
                 elif "NOT_FOUND" in mensaje or "404" in mensaje:
                     log.error("El modelo '%s' no existe o no está disponible", self.cfg.model)
                     break
