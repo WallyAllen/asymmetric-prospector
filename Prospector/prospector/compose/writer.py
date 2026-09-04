@@ -259,9 +259,9 @@ def componer_por_plantilla(
     if not tiene_adjunto:
         frase_adjunto = ""
     elif es_marcada:
-        frase_adjunto = "Te adjunto la captura con la zona marcada para que veas exactamente a qué me refiero.\n\n"
+        frase_adjunto = "Ahí tenés la captura, con la zona marcada.\n\n"
     else:
-        frase_adjunto = "Te adjunto una captura de la portada tal como la vi.\n\n"
+        frase_adjunto = "Ahí tenés una captura de la portada, tal como la vi.\n\n"
 
     prueba_social = _prueba_social(lead)
     frase_prueba = _frase_prueba(cfg)
@@ -315,9 +315,9 @@ def componer_por_plantilla(
             f"{dominio} apareció cuando busqué {_termino_busqueda(lead.nicho)}. Entré y me quedé en la "
             f"primera pantalla{apertura_social}. {cuerpo_problema}{extra}\n\n"
             f"{frase_adjunto}"
-            f"Esa parte es la que rehago: misma marca, misma información, ordenada para que "
-            f"el visitante sepa en tres segundos qué hacen y cómo contactarlos.{frase_prueba}\n\n"
-            f"Tu portada rearmada me lleva un par de horas. ¿Te sirve si te la muestro con el enlace? "
+            f"Esa parte es la que rehago: misma marca, ordenada para que se entienda en tres segundos "
+            f"qué hacés y cómo contactarte.{frase_prueba}\n\n"
+            f"Tu portada rearmada me lleva un par de horas. ¿Te sirve si te la muestro? "
             f"Si no te convence, no perdiste nada.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
