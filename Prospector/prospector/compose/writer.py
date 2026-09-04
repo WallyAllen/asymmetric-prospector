@@ -269,17 +269,17 @@ def componer_por_plantilla(
     if not lead.url:
         asunto = random.choice(ASUNTOS_SIN_WEB).format(nombre=nombre, dominio=dominio)
         apertura = (
-            f"Los busqué y tienen {prueba_social} en Maps, pero no hay web detrás."
+            f"Tienen {prueba_social} en Maps, pero no hay web detrás."
             if prueba_social else
-            "Los busqué en Google y aparecen en Maps, pero sin web."
+            "Aparecen en Google Maps, pero no hay web detrás."
         )
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"{apertura} Quien los encuentra ahí no ve servicios ni precios ni forma de reservar, "
+            f"{apertura} Quien los encuentra ahí no ve servicios, ni precios, ni forma de reservar, "
             f"así que termina abriendo la ficha del siguiente de la lista.\n\n"
-            f"Me dedico a armar páginas de una sola pantalla para negocios como el suyo: "
-            f"qué hacen, por qué elegirlos y un botón para escribir o llamar. Nada más.{frase_prueba}\n\n"
-            f"Me lleva un par de horas armar un boceto de cómo se vería la de {nombre}. "
+            f"Una página de una sola pantalla les resuelve eso: qué hacen, por qué elegirlos y un botón "
+            f"para escribir o llamar. Nada más.{frase_prueba}\n\n"
+            f"El boceto de cómo se vería la de {nombre} me lleva un par de horas. "
             f"¿Les sirve si se lo paso por acá? No cuesta nada verlo, y si no encaja, no pasa nada.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
@@ -289,12 +289,12 @@ def componer_por_plantilla(
         asunto = random.choice(ASUNTOS_CON_WEB).format(nombre=nombre, dominio=dominio, dispositivo=dispositivo)
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"Busqué {_termino_busqueda(lead.nicho)} e intenté entrar a {dominio}, pero la página no cargó. "
-            f"Probé de nuevo por si era algo puntual, pero el resultado fue el mismo.\n\n"
+            f"{dominio} no cargó ninguna de las dos veces que probé. Busqué {_termino_busqueda(lead.nicho)}, "
+            f"entré, y nada.\n\n"
             f"Quien te busca y se encuentra eso no vuelve a intentarlo: entra al siguiente resultado. "
-            f"Si el dominio o el hosting vencieron, o hay un error de configuración, es de las cosas más rápidas "
-            f"de resolver y de las que más está costando en silencio.{frase_prueba}\n\n"
-            f"¿Te interesa que te cuente exactamente qué encontré? Te lo mando sin compromiso.\n\n"
+            f"Si el dominio o el hosting vencieron, o hay un error de configuración, suele ser de lo más "
+            f"rápido de resolver, y de lo que más cuesta en silencio mientras tanto.{frase_prueba}\n\n"
+            f"¿Te sirve si te paso exactamente qué me apareció? Sin compromiso.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
         tiene_adjunto = False  # no hay captura posible de una página que no cargó
@@ -312,12 +312,12 @@ def componer_por_plantilla(
         asunto = random.choice(ASUNTOS_CON_WEB).format(nombre=nombre, dominio=dominio, dispositivo=dispositivo)
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"Busqué {_termino_busqueda(lead.nicho)} y entré en {dominio}: me quedé mirando la "
+            f"{dominio} apareció cuando busqué {_termino_busqueda(lead.nicho)}. Entré y me quedé en la "
             f"primera pantalla{apertura_social}. {cuerpo_problema}{extra}\n\n"
             f"{frase_adjunto}"
-            f"Me dedico a rehacer justo esa parte: misma marca, misma información, ordenada para que "
+            f"Esa parte es la que rehago: misma marca, misma información, ordenada para que "
             f"el visitante sepa en tres segundos qué hacen y cómo contactarlos.{frase_prueba}\n\n"
-            f"Me lleva un par de horas armar la portada: ¿te sirve si te la muestro con el enlace? "
+            f"Tu portada rearmada me lleva un par de horas. ¿Te sirve si te la muestro con el enlace? "
             f"Si no te convence, no perdiste nada.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
