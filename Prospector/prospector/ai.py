@@ -31,6 +31,10 @@ class GeminiClient:
         self._client = None
         self._lock = threading.Lock()
         self._ultima_llamada = 0.0
+        # Una vez confirmada la cuota DIARIA agotada, no se libera hasta
+        # mañana: reintentar lead por lead (16s, 24s... cada vez) durante el
+        # resto de esta corrida es tiempo tirado, no una segunda oportunidad.
+        self._cuota_diaria_agotada = False
 
     # ---------------------------------------------------------------- interno
     def _ensure(self):
@@ -77,6 +81,9 @@ class GeminiClient:
         temperatura: float | None = None,
         esquema: dict | None = None,
     ) -> dict[str, Any]:
+        if self._cuota_diaria_agotada:
+            raise AIUnavailable("Cuota diaria de Gemini agotada (ya confirmada en esta corrida)")
+
         cliente = self._ensure()
         from google.genai import types
 
@@ -110,7 +117,19 @@ class GeminiClient:
             except Exception as exc:  # noqa: BLE001 - cuota, red, JSON inválido...
                 ultimo_error = exc
                 mensaje = str(exc)
-                if "RESOURCE_EXHAUSTED" in mensaje or "429" in mensaje:
+                if "PerDay" in mensaje or "generate_content_free_tier_requests" in mensaje:
+                    # Cuota DIARIA del nivel gratuito (no por minuto): no hay
+                    # backoff que la destrabe hoy. Cortar acá evita pagar el
+                    # costo de 3 reintentos con espera por cada lead que
+                    # falte en esta misma corrida.
+                    self._cuota_diaria_agotada = True
+                    log.warning(
+                        "Cuota DIARIA de Gemini agotada (nivel gratuito, %s): "
+                        "se sigue solo con plantillas el resto de esta corrida",
+                        self.cfg.model,
+                    )
+                    break
+                elif "RESOURCE_EXHAUSTED" in mensaje or "429" in mensaje:
                     espera = min(60, 8 * intento)
                     log.warning("Cuota de Gemini agotada; esperando %ds", espera)
                     time.sleep(espera)
