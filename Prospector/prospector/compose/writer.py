@@ -38,6 +38,23 @@ FRASES_PROHIBIDAS = (
     "llevar tu negocio al siguiente nivel",
     "soluciones a medida",
     "en un mercado cada vez más competitivo",
+    # Condicional pedigüeño: pide permiso para existir y baja el estatus del
+    # remitente antes de que el lector llegue al argumento.
+    "quería consultarte",
+    "queria consultarte",
+    "no sé si te interesará",
+    "no se si te interesara",
+    "disculpá la molestia",
+    "disculpa la molestia",
+    "espero no molestar",
+    "perdón por la molestia",
+    "perdon por la molestia",
+    # Jerga vacía ("sinergia" no va acá: SLOP_GENERAL ya la reemplaza por
+    # "encaje" en vez de borrar la oración entera)
+    "solución integral",
+    "transformación digital",
+    "propuesta de valor",
+    "líder del mercado",
 )
 
 SLOP_GENERAL = {
@@ -330,23 +347,31 @@ Prospecto:
 {vision}
 
 Reglas innegociables:
-1. Máximo 130 palabras. Cuatro párrafos cortos como mucho.
+1. Máximo 130 palabras. Cuatro párrafos cortos como mucho, y ninguno de más de dos líneas leído en la
+   pantalla de un celular.
 2. La primera frase menciona algo CONCRETO y verificable de SU web (o, si no tiene, de su ficha de Maps).
-   Nada de aperturas genéricas.
+   Nada de aperturas genéricas: si la frase sirve igual para otro prospecto de la lista, es spam.
 3. Traduce el problema técnico a consecuencia de negocio (clientes que se pierden), sin jerga. Si hay
    reputación en Maps, úsala como prueba de que la demanda ya existe (es un dato SUYO, no una estadística
    genérica: pesa mucho más). Prohibido inventar o citar estadísticas de la industria tipo "una de cada
    cuatro personas abandona" o "más de la mitad de las visitas son de móvil": si no es un dato medido de
    ESTE prospecto, no se afirma como hecho.
 4. Prohibido: "espero que estés bien", "en el mundo actual", "llevar tu negocio al siguiente nivel",
-   signos de exclamación, mayúsculas de énfasis, emojis, guiones largos.
+   signos de exclamación, mayúsculas de énfasis, emojis, guiones largos. Prohibido también el condicional
+   pedigüeño ("quería consultarte", "no sé si te interesará", "disculpá la molestia", "espero no
+   molestar"): pide permiso para existir y baja el estatus antes de que el lector llegue al argumento.
+   Prohibida cualquier credencial académica (carrera, universidad, "estoy estudiando"): la autoridad la
+   dan el hallazgo medido y la evidencia, no un título.
 5. {regla_adjunto}
 6. Cierra ofreciendo un prototipo de la portada con una pregunta directa de bajo compromiso y un plazo
    concreto ("me lleva un par de horas", "lo tenés mañana"). Nunca digas que el prototipo de ESE negocio
    puntual ya existe o ya está hecho: no es cierto hasta que responda. Prohibido el patrón "¿te opondrías
    a...?" o cualquier doble negación tipo "¿no te molestaría que...?": preguntá directo, "¿te sirve si...?".
 7. Firma como {firmante} ({rol}). Sin posdatas ni enlaces de baja.
-8. {regla_dialecto}
+8. Ratio: al menos el DOBLE de referencias al negocio del prospecto (su web, su ficha, sus clientes, lo
+   que pierde) que a vos mismo (lo que hacés, lo que ofrecés). Contalas antes de responder. Un correo que
+   habla más del remitente que del lector no se contesta.
+9. {regla_dialecto}
 {regla_prueba}
 {regla_estado}
 
@@ -395,12 +420,12 @@ def componer_con_ia(
             "que está marcada, señalada o resaltada (no lo está, es la captura sin anotar)."
         )
     regla_estado = (
-        "9. El sitio no cargó cuando lo visitamos (hallazgo sitio_inaccesible): NO digas que viste su "
+        "11. El sitio no cargó cuando lo visitamos (hallazgo sitio_inaccesible): NO digas que viste su "
         "primera pantalla ni que navegaste la web. Contá que intentaste entrar y no cargó."
         if inaccesible else ""
     )
     regla_prueba = (
-        f'9. Si encaja de forma natural (no forzado), sumá esta prueba de que ya hiciste este trabajo: '
+        f'10. Si encaja de forma natural (no forzado), sumá esta prueba de que ya hiciste este trabajo: '
         f'"{cfg.sender_proof.strip()}".'
         if cfg.sender_proof.strip() else ""
     )
