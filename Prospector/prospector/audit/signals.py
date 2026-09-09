@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..config import DESKTOP_VIEWPORT, MOBILE_UA, MOBILE_VIEWPORT, SHOTS_DIR, AuditSettings
+from ..config import DESKTOP_VIEWPORT, MOBILE_DEVICE_SCALE, MOBILE_UA, MOBILE_VIEWPORT, SHOTS_DIR, AuditSettings
 from ..logging_setup import get_logger
 from ..models import Metrics
 from ..utils import registrable_domain, slugify
@@ -67,10 +67,10 @@ class SiteProbe:
                 user_agent=MOBILE_UA,
                 is_mobile=True,
                 has_touch=True,
-                device_scale_factor=2,
+                device_scale_factor=MOBILE_DEVICE_SCALE,
             )
         else:
-            kwargs.update(viewport=DESKTOP_VIEWPORT, device_scale_factor=1)
+            kwargs.update(viewport=DESKTOP_VIEWPORT, device_scale_factor=2)
         context = await self._browser.new_context(**kwargs)
         context.set_default_timeout(self.cfg.nav_timeout_ms)
         await context.add_init_script(WEB_VITALS_INIT_JS)
@@ -148,15 +148,23 @@ class SiteProbe:
         res.metrics.peticiones = bytes_totales["peticiones"] or None
         res.metrics.imagenes_pesadas_kb = round(bytes_totales["imagenes"] / 1024, 1) or None
 
+        if not res.desktop.get("popupIntrusivo"):
+            try:
+                await page.evaluate("""() => {
+                    const btns = Array.from(document.querySelectorAll('button, a, [role="button"]'));
+                    const accept = btns.find(e => {
+                        const t = (e.innerText || '').toLowerCase();
+                        return (t.includes('aceptar') || t.includes('accept') || t.includes('entendido') || t.includes('agree') || t.includes('got it')) && !t.includes('env');
+                    });
+                    if (accept && accept.offsetHeight > 0) accept.click();
+                }""")
+                await page.wait_for_timeout(400)
+            except Exception:
+                pass
+
         fold = carpeta / "desktop-fold.png"
-        await page.screenshot(path=str(fold))
+        await page.screenshot(path=str(fold), animations="disabled")
         res.capturas["desktop_fold"] = fold
-        try:
-            completa = carpeta / "desktop-full.png"
-            await page.screenshot(path=str(completa), full_page=True)
-            res.capturas["desktop_full"] = completa
-        except Exception:  # noqa: BLE001 - páginas gigantes pueden reventar la captura
-            pass
 
         await context.close()
 
@@ -171,9 +179,38 @@ class SiteProbe:
         await page.wait_for_timeout(600)
         res.mobile = await page.evaluate(AUDIT_JS)
 
+        if not res.mobile.get("popupIntrusivo"):
+            try:
+                await page.evaluate("""() => {
+                    const btns = Array.from(document.querySelectorAll('button, a, [role="button"]'));
+                    const accept = btns.find(e => {
+                        const t = (e.innerText || '').toLowerCase();
+                        return (t.includes('aceptar') || t.includes('accept') || t.includes('entendido') || t.includes('agree') || t.includes('got it')) && !t.includes('env');
+                    });
+                    if (accept && accept.offsetHeight > 0) accept.click();
+                }""")
+                await page.wait_for_timeout(400)
+            except Exception:
+                pass
+
         fold = carpeta / "mobile-fold.png"
-        await page.screenshot(path=str(fold))
+        await page.screenshot(path=str(fold), animations="disabled")
         res.capturas["mobile_fold"] = fold
+
+        # El desborde horizontal es invisible en una captura de viewport: el
+        # propio viewport recorta justo lo que se sale, así que una imagen de
+        # 390px jamás puede mostrar que el contenido mide más que eso. Para
+        # probarlo hace falta full_page=True, que usa el scrollWidth real.
+        # Se captura solo cuando hay desborde: en el resto de los sitios
+        # equivaldría al fold y sería una captura de más.
+        if res.mobile.get("overflowHorizontal"):
+            try:
+                completa = carpeta / "mobile-full.png"
+                await page.screenshot(path=str(completa), full_page=True, animations="disabled")
+                res.capturas["mobile_full"] = completa
+            except Exception:  # noqa: BLE001 - páginas gigantes pueden reventar la captura
+                pass
+
         await context.close()
 
 

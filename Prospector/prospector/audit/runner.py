@@ -11,7 +11,7 @@ from ..models import Audit, Lead
 from ..storage import to_relative
 from ..utils import registrable_domain, slugify
 from . import rules
-from .capture import anotar
+from .capture import anotar, anotar_overflow_movil
 from .signals import ProbeResult, SiteProbe
 from .vision import a_finding, juzgar
 
@@ -132,14 +132,29 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
         if dibujados > 0:
             auditoria.captura_marcada = True
 
-    movil = res.capturas.get("mobile_fold")
     hallazgos_movil = [h for h in prioridad if h.viewport == "mobile"]
-    if movil and hallazgos_movil and Path(movil).exists():
+    if hallazgos_movil:
+        principal_movil = hallazgos_movil[0]
         destino_movil = SHOTS_DIR / _slug(lead) / "anotada-movil.png"
-        resultado_movil = anotar(
-            Path(movil), destino_movil, hallazgos_movil, movil=True,
-            pie=hallazgos_movil[0].argumento,
-        )
+        resultado_movil = None
+
+        # El desborde horizontal no se puede probar con la captura de
+        # viewport (recorta justo lo que se sale): si es el hallazgo que
+        # lidera el argumento móvil, se usa la captura full_page en su lugar.
+        origen_full = res.capturas.get("mobile_full")
+        if principal_movil.rule_id == "overflow_mobile" and origen_full and Path(origen_full).exists():
+            resultado_movil = anotar_overflow_movil(
+                Path(origen_full), destino_movil, principal_movil, pie=principal_movil.argumento,
+            )
+
+        if resultado_movil is None:
+            movil = res.capturas.get("mobile_fold")
+            if movil and Path(movil).exists():
+                resultado_movil = anotar(
+                    Path(movil), destino_movil, hallazgos_movil, movil=True,
+                    pie=principal_movil.argumento,
+                )
+
         if resultado_movil:
             ruta_movil, dibujados_movil = resultado_movil
             auditoria.capturas["anotada_movil"] = to_relative(ruta_movil) or ""
@@ -153,6 +168,16 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
         principal = auditoria.capturas["anotada_movil"]
     if principal:
         auditoria.capturas["principal"] = principal
+
+    # Eliminar capturas originales duplicadas para ahorrar espacio
+    for clave, ruta_abs in res.capturas.items():
+        if clave not in ("anotada", "anotada_movil", "principal"):
+            try:
+                Path(ruta_abs).unlink(missing_ok=True)
+                if clave in auditoria.capturas:
+                    del auditoria.capturas[clave]
+            except Exception:
+                pass
 
 
 async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False) -> list[Lead]:

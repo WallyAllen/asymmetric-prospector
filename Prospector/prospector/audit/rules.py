@@ -35,6 +35,33 @@ from .signals import ProbeResult
 Regla = Callable[[ProbeResult], Finding | None]
 _REGLAS: list[Regla] = []
 
+# Hallazgos cuya "zona" se puede demostrar con una captura: son defectos que
+# SE VEN — un botón que falta, un texto chico, un popup tapando la pantalla.
+# El resto (carga_lenta, cls_alto, seo_basico, sin_contacto, peso_excesivo...)
+# son medidas de tiempo, código o ausencia de algo: no hay ningún rectángulo
+# de píxeles que los demuestre, aunque la regla tenga un `zona` calculado
+# (p. ej. "la imagen más grande del fold" para carga_lenta). Dibujar un
+# recuadro ahí no prueba nada — es una caja decorativa alrededor de lo que
+# sea que haya quedado más grande, y el prospecto lo detecta a la primera
+# mirada. Ver `capture.anotar`: cuando el hallazgo principal no está en este
+# conjunto, no se marca ningún recuadro.
+DEMOSTRABLES = frozenset({
+    "sin_cta_fold",
+    "popup_intrusivo",
+    "texto_pequeno_movil",
+    "sin_viewport",
+    "overflow_mobile",
+    # El jurado visual (vision.py) recibe la captura y señala DENTRO de ella
+    # dónde está el problema: su zona no es una aproximación, es literalmente
+    # el punto que un humano miró y marcó. Distinto de una regla que calcula
+    # "la imagen más grande del fold" sin haber visto si eso prueba algo.
+    "jurado_visual",
+})
+
+
+def es_demostrable(finding: Finding) -> bool:
+    return finding.rule_id in DEMOSTRABLES
+
 
 def regla(func: Regla) -> Regla:
     _REGLAS.append(func)
