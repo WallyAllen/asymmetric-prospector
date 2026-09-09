@@ -67,6 +67,7 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 DESKTOP_VIEWPORT = {"width": 1440, "height": 900}
 MOBILE_VIEWPORT = {"width": 390, "height": 844}
+MOBILE_DEVICE_SCALE = 2
 MOBILE_UA = (
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 "
     "(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
@@ -104,6 +105,7 @@ class ComposeSettings:
     sender_name: str = field(default_factory=lambda: _env("SENDER_NAME", "Felipe"))
     sender_role: str = field(default_factory=lambda: _env("SENDER_ROLE", "Diseño y CRO de landing pages"))
     sender_site: str = field(default_factory=lambda: _env("SENDER_SITE", ""))
+    sender_phone: str = field(default_factory=lambda: _env("SENDER_PHONE", ""))
     # Una línea de prueba social REAL y verificable (p. ej. "hice esto mismo
     # para un estudio contable acá en La Plata"). Vacío por defecto: nunca se
     # inventa una referencia, solo se usa si vos la completás en .env.

@@ -259,9 +259,9 @@ def componer_por_plantilla(
     if not tiene_adjunto:
         frase_adjunto = ""
     elif es_marcada:
-        frase_adjunto = "Ahí tenés la captura, con la zona marcada.\n\n"
+        frase_adjunto = "Ahí tienes la captura con la zona marcada.\n\n"
     else:
-        frase_adjunto = "Ahí tenés una captura de la portada, tal como la vi.\n\n"
+        frase_adjunto = "Ahí tienes una captura de la portada, tal como la vi.\n\n"
 
     prueba_social = _prueba_social(lead)
     frase_prueba = _frase_prueba(cfg)
@@ -275,11 +275,11 @@ def componer_por_plantilla(
         )
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"{apertura} Quien los encuentra ahí no ve servicios, ni precios, ni forma de reservar, "
-            f"así que termina abriendo la ficha del siguiente de la lista.\n\n"
-            f"Una página de una sola pantalla les resuelve eso: qué hacen, por qué elegirlos y un botón "
-            f"para escribir o llamar. Nada más.{frase_prueba}\n\n"
-            f"El boceto de cómo se vería la de {nombre} me lleva un par de horas. "
+            f"{apertura} El problema es que quien los encuentra ahí no ve servicios, ni precios, "
+            f"ni forma de reservar, así que termina abriendo la ficha del siguiente de la lista.\n\n"
+            f"Una página de una sola pantalla les resuelve esto de raíz: muestran qué hacen, por qué elegirlos "
+            f"y un botón para escribir o llamar. Nada más.{frase_prueba}\n\n"
+            f"Armar un boceto de cómo se vería la web de {nombre} me lleva un par de horas. "
             f"¿Les sirve si se lo paso por acá? No cuesta nada verlo, y si no encaja, no pasa nada.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
@@ -289,12 +289,12 @@ def componer_por_plantilla(
         asunto = random.choice(ASUNTOS_CON_WEB).format(nombre=nombre, dominio=dominio, dispositivo=dispositivo)
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"{dominio} no cargó ninguna de las dos veces que probé. Busqué {_termino_busqueda(lead.nicho)}, "
-            f"entré, y nada.\n\n"
-            f"Quien te busca y se encuentra eso no vuelve a intentarlo: entra al siguiente resultado. "
-            f"Si el dominio o el hosting vencieron, o hay un error de configuración, suele ser de lo más "
-            f"rápido de resolver, y de lo que más cuesta en silencio mientras tanto.{frase_prueba}\n\n"
-            f"¿Te sirve si te paso exactamente qué me apareció? Sin compromiso.\n\n"
+            f"Intenté entrar a {dominio} buscando {_termino_busqueda(lead.nicho)} y la web no cargó "
+            f"ninguna de las dos veces que probé.\n\n"
+            f"Quien te busca y se encuentra con eso no vuelve a intentarlo: entra al siguiente resultado. "
+            f"Si el dominio o el hosting vencieron, o hay un error de configuración, suele ser algo "
+            f"rápido de resolver, y de lo que más clientes cuesta en silencio mientras tanto.{frase_prueba}\n\n"
+            f"¿Te sirve si te paso exactamente qué error me apareció? Sin compromiso.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
         tiene_adjunto = False  # no hay captura posible de una página que no cargó
@@ -305,25 +305,28 @@ def componer_por_plantilla(
             "La primera pantalla no está trabajando para convertir visitas en contactos."
         )
         extra = (
-            f"\n\nY no es lo único: {_primera_minuscula(secundario.argumento)}"
+            f"\n\nY un detalle más: {_primera_minuscula(secundario.argumento)}"
             if secundario else ""
         )
         apertura_social = f" (con {prueba_social} se nota que hay demanda real)" if prueba_social else ""
         asunto = random.choice(ASUNTOS_CON_WEB).format(nombre=nombre, dominio=dominio, dispositivo=dispositivo)
         cuerpo = (
             f"{_saludo(lead)}\n\n"
-            f"{dominio} apareció cuando busqué {_termino_busqueda(lead.nicho)}. Entré y me quedé en la "
-            f"primera pantalla{apertura_social}. {cuerpo_problema}{extra}\n\n"
+            f"Estaba buscando {_termino_busqueda(lead.nicho)} y llegué a {dominio}{apertura_social}. "
+            f"Me quedé mirando la primera pantalla y noté algo: {cuerpo_problema}{extra}\n\n"
             f"{frase_adjunto}"
-            f"Esa parte es la que rehago: misma marca, ordenada para que se entienda en tres segundos "
-            f"qué hacés y cómo contactarte.{frase_prueba}\n\n"
-            f"Tu portada rearmada me lleva un par de horas. ¿Te sirve si te la muestro? "
-            f"Si no te convence, no perdiste nada.\n\n"
+            f"Si el visitante no ve rápido cómo contactar, termina cerrando la pestaña. "
+            f"Me dedico a arreglar justamente esto: tomo tu diseño actual y lo ordeno para que se entienda "
+            f"en tres segundos qué haces y dónde hacer clic.{frase_prueba}\n\n"
+            f"Me toma un par de horas armar un boceto de cómo quedaría tu web optimizada. ¿Te sirve si te lo "
+            f"paso para que lo veas? Sin ningún compromiso.\n\n"
             f"{cfg.sender_name}\n{cfg.sender_role}"
         )
 
     if cfg.sender_site:
         cuerpo += f"\n{cfg.sender_site}"
+    if cfg.sender_phone:
+        cuerpo += f"\n{cfg.sender_phone}"
     return EmailDraft(asunto=asunto, cuerpo=limpiar(cuerpo, dialecto), generado_por="plantilla")
 
 
@@ -451,6 +454,8 @@ def componer_con_ia(
         cuerpo = _quitar_mencion_adjunto(cuerpo)
     if cfg.sender_site and cfg.sender_site not in cuerpo:
         cuerpo += f"\n{cfg.sender_site}"
+    if cfg.sender_phone and cfg.sender_phone not in cuerpo:
+        cuerpo += f"\n{cfg.sender_phone}"
     return EmailDraft(
         asunto=limpiar(str(datos.get("asunto", "")), dialecto).strip().strip(".").lower(),
         cuerpo=cuerpo,
