@@ -1,0 +1,92 @@
+---
+interface Props {
+  title: string;
+  logos: string[];
+}
+const { title, logos } = Astro.props;
+---
+<section class="coberturas-section" aria-labelledby="coberturas-title">
+  <div class="container coberturas-container">
+    <h2 id="coberturas-title">{title}</h2>
+    
+    <ul class="logos-grid" role="list">
+      {logos.map((logo) => (
+        <li class="logo-item">
+          <div class="logo-placeholder" aria-label={`Logo ${logo}`}>
+            <span class="logo-text">{logo}</span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .coberturas-section {
+    background-color: #ffffff; /* Tema claro para fluir desde el hero */
+    padding: 4rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .coberturas-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  h2 {
+    color: var(--muted);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0;
+    text-align: center;
+  }
+
+  .logos-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  @media (min-width: 768px) {
+    .logos-grid {
+      gap: 4rem;
+    }
+  }
+
+  .logo-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .logo-placeholder {
+    width: 120px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: grayscale(100%) opacity(50%);
+    transition: filter 0.3s ease;
+  }
+
+  .logo-placeholder:hover {
+    filter: grayscale(0%) opacity(100%);
+  }
+
+  .logo-text {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--navy-deep);
+  }
+</style>

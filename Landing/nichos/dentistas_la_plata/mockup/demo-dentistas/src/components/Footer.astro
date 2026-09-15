@@ -1,0 +1,100 @@
+---
+import { estudio } from '../data/estudio.js';
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <h3>{estudio.nombre}</h3>
+      <p>{estudio.slogan}</p>
+      {estudio.matricula && <p class="matricula">Matrícula: {estudio.matricula}</p>}
+    </div>
+    
+    <div class="footer-links">
+      <h4>Navegación</h4>
+      <ul>
+        <li><a href="#areas">Áreas de Práctica</a></li>
+        <li><a href="#estudio">El Estudio</a></li>
+        <li><a href="#faq">Preguntas Frecuentes</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+      </ul>
+    </div>
+    
+    <div class="footer-contact">
+      <h4>Contacto</h4>
+      <p>{estudio.direccion}</p>
+      <p>{estudio.ciudad}, {estudio.provincia}</p>
+      <p><a href={`tel:${estudio.telefono}`}>{estudio.telefonoDisplay}</a></p>
+    </div>
+  </div>
+  
+  <div class="footer-bottom container">
+    <p>&copy; {year} {estudio.nombre}. Todos los derechos reservados.</p>
+    <p class="credits">Sitio por <strong>Signal</strong></p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background-color: var(--navy-deep);
+    color: #94a3b8;
+    padding: 4rem 0 2rem 0;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+  }
+  .footer-brand h3 {
+    color: var(--paper);
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .matricula {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--gold-muted);
+  }
+  .footer h4 {
+    color: var(--paper);
+    font-size: 1.125rem;
+    margin-bottom: 1.25rem;
+  }
+  .footer-links ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .footer-links a:hover {
+    color: var(--gold-muted);
+  }
+  .footer-contact p {
+    margin-bottom: 0.5rem;
+  }
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+  }
+  .credits {
+    color: var(--paper);
+  }
+  .credits strong {
+    color: var(--gold-muted);
+  }
+  @media (max-width: 768px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      gap: 1rem;
+      text-align: center;
+    }
+  }
+</style>

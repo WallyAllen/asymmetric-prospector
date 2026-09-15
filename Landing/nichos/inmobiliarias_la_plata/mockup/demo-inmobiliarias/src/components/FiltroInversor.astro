@@ -1,0 +1,211 @@
+---
+interface Props {
+  numeroWa: string;
+}
+const { numeroWa } = Astro.props;
+---
+<section id="filtro" class="filtro-section section-padding">
+  <div class="container filtro-container">
+    <div class="filtro-card" data-wa={numeroWa}>
+      <!-- FASE 1: Formulario -->
+      <div id="filtro-step-1" class="filtro-step active">
+        <h2 class="filtro-title">Aplicar al Portafolio</h2>
+        <p class="filtro-desc">Debido a la naturaleza confidencial de nuestros activos, operamos exclusivamente con inversores cualificados.</p>
+        
+        <form id="filtro-form" class="filtro-form">
+          <div class="form-group">
+            <label for="nombre">Nombre Completo</label>
+            <input type="text" id="nombre" placeholder="Ej: Juan Pérez" required />
+          </div>
+          
+          <div class="form-group">
+            <label for="objetivo">Objetivo de Inversión</label>
+            <div class="select-wrapper">
+              <select id="objetivo" required>
+                <option value="" disabled selected>Seleccione un objetivo...</option>
+                <option value="Comprar para Vivir">Comprar para Vivir</option>
+                <option value="Inversión de Renta">Inversión de Renta</option>
+                <option value="Refugio de Capital">Refugio de Capital</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="presupuesto">Rango de Presupuesto</label>
+            <div class="select-wrapper">
+              <select id="presupuesto" required>
+                <option value="" disabled selected>Seleccione un rango...</option>
+                <option value="USD 100k - 250k">USD 100k - 250k</option>
+                <option value="USD 250k - 500k">USD 250k - 500k</option>
+                <option value="USD 500k+">USD 500k+</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-outline">Solicitar Acceso al Portafolio</button>
+        </form>
+      </div>
+
+      <!-- FASE 2: Carga -->
+      <div id="filtro-step-2" class="filtro-step">
+        <div class="spinner-container">
+          <div class="spinner"></div>
+          <p class="spinner-text">Cualificando perfil e inventario...</p>
+        </div>
+      </div>
+
+      <!-- FASE 3: Éxito y WhatsApp -->
+      <div id="filtro-step-3" class="filtro-step">
+        <div class="success-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        </div>
+        <h3 class="filtro-title">Perfil Pre-Aprobado</h3>
+        <p class="filtro-desc success-desc">
+          Perfil recibido correctamente. Su asesor de inversiones asignado requiere un último paso de validación antes de liberar el dossier.
+        </p>
+        <button id="btn-wa-inversor" class="btn-solid">Completar Validación por WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .filtro-section { background-color: #09090b; padding: 8rem 0; display: flex; justify-content: center; }
+  .filtro-container { display: flex; justify-content: center; width: 100%; }
+  
+  .filtro-card {
+    background-color: #18181B;
+    width: 100%;
+    max-width: 550px;
+    padding: 4rem 3rem;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 2px;
+    text-align: center;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .filtro-step { display: none; opacity: 0; transition: opacity 0.4s ease; }
+  .filtro-step.active { display: block; opacity: 1; animation: fadeIn 0.5s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .filtro-title { color: #E4B363; font-family: var(--font-serif); font-size: 2rem; margin-bottom: 1rem; font-weight: 400; }
+  .filtro-desc { color: #A1A1AA; font-size: 1rem; margin-bottom: 2.5rem; line-height: 1.6; }
+
+  .filtro-form { text-align: left; }
+  .form-group { margin-bottom: 1.5rem; }
+  .form-group label { display: block; color: #FAFAFA; margin-bottom: 0.5rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #FAFAFA;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    border-radius: 0; /* Minimalismo agresivo */
+    appearance: none;
+  }
+  
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #E4B363; background-color: rgba(255, 255, 255, 0.05); }
+
+  /* Contenedor select para la flecha custom */
+  .select-wrapper { position: relative; }
+  .select-wrapper::after { content: "▼"; font-size: 0.7rem; color: #E4B363; position: absolute; right: 1.2rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+
+  /* Botones de Lujo */
+  .btn-outline {
+    width: 100%;
+    background-color: transparent;
+    color: #E4B363;
+    border: 1px solid #E4B363;
+    padding: 1.2rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    margin-top: 1rem;
+  }
+  .btn-outline:hover { background-color: #E4B363; color: #18181B; }
+
+  .btn-solid {
+    width: 100%;
+    background-color: #E4B363;
+    color: #18181B;
+    border: none;
+    padding: 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .btn-solid:hover { background-color: #c99b4f; }
+
+  /* Spinner */
+  .spinner-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; height: 100%; }
+  .spinner { width: 50px; height: 50px; border: 2px solid rgba(228, 179, 99, 0.2); border-radius: 50%; border-top-color: #E4B363; animation: spin 1s linear infinite; }
+  .spinner-text { color: #E4B363; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; animation: pulse 1.5s infinite; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  .success-icon { color: #E4B363; margin-bottom: 1.5rem; display: flex; justify-content: center; }
+  .success-desc { background: rgba(228, 179, 99, 0.05); padding: 1.5rem; border: 1px solid rgba(228, 179, 99, 0.2); text-align: left; }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const card = document.querySelector('.filtro-card');
+    if (!card) return;
+
+    const waNumber = card.getAttribute('data-wa');
+    const form = document.getElementById('filtro-form') as HTMLFormElement;
+    const btnWhatsapp = document.getElementById('btn-wa-inversor');
+    
+    const step1 = document.getElementById('filtro-step-1');
+    const step2 = document.getElementById('filtro-step-2');
+    const step3 = document.getElementById('filtro-step-3');
+
+    const inputNombre = document.getElementById('nombre') as HTMLInputElement;
+    const selectObjetivo = document.getElementById('objetivo') as HTMLSelectElement;
+    const selectPresupuesto = document.getElementById('presupuesto') as HTMLSelectElement;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      // Fase 2: Spinner (Cualificación Simulada)
+      step1.classList.remove('active');
+      setTimeout(() => {
+        step1.style.display = 'none';
+        step2.style.display = 'block';
+        setTimeout(() => step2.classList.add('active'), 50);
+      }, 400);
+
+      // Fase 3: Éxito (Después de 1.5s)
+      setTimeout(() => {
+        step2.classList.remove('active');
+        setTimeout(() => {
+          step2.style.display = 'none';
+          step3.style.display = 'block';
+          setTimeout(() => step3.classList.add('active'), 50);
+        }, 400);
+      }, 1500);
+    });
+
+    btnWhatsapp.addEventListener('click', () => {
+      const nombre = inputNombre.value;
+      const objetivo = selectObjetivo.value;
+      const presupuesto = selectPresupuesto.value;
+      
+      const mensaje = `Hola, soy ${nombre}. Busco propiedades para ${objetivo} con un presupuesto de ${presupuesto}. Solicito acceso al portafolio privado.`;
+      const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(mensaje)}`;
+      
+      window.open(url, '_blank');
+    });
+  });
+</script>

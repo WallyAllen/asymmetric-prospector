@@ -5,6 +5,11 @@ sin build ni dependencias. La estructura de carpetas, el funcionamiento del bloq
 `CONFIG` y los estándares de diseño están en `README.md` — leelo antes de tocar un
 mockup por primera vez en la sesión.
 
+Excepción documentada: algunos mockups (`demo-abogados/`, `demo-dentistas/`,
+`demo-inmobiliarias/`, `juridico-dike/`) son proyectos Astro completos con su
+propio build y su propio `CLAUDE.md` interno — ver README.md. No apliques las
+reglas de "un solo archivo" de abajo ahí adentro; aplicá las de ese subproyecto.
+
 ## Economía de contexto (regla dura)
 
 Cada mockup pesa ~1300 líneas / ~78 KB ≈ **~22k tokens**. Leerlo entero o

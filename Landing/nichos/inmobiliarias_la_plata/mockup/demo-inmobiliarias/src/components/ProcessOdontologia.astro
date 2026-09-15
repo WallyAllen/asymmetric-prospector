@@ -1,0 +1,129 @@
+---
+interface Step {
+  number: string;
+  title: string;
+  description: string;
+}
+
+interface Props {
+  title: string;
+  subtitle: string;
+  steps: Step[];
+}
+
+const { title, subtitle, steps } = Astro.props;
+---
+
+<section class="process-section section-padding">
+  <div class="container">
+    <div class="process-header">
+      <span class="section-label">Nuestro Método</span>
+      <h2 class="section-title">{title}</h2>
+      <p class="section-subtitle">{subtitle}</p>
+    </div>
+
+    <div class="process-grid">
+      {steps.map((step) => (
+        <div class="process-card">
+          <div class="step-badge">Paso {step.number}</div>
+          <h3 class="step-title">{step.title}</h3>
+          <p class="step-desc">{step.description}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .process-section {
+    background-color: var(--paper); /* Fondo claro, continuidad lógica con Trust Badges */
+    color: var(--navy-deep);
+    padding: 6rem 0 8rem;
+  }
+
+  .process-header {
+    text-align: center;
+    margin-bottom: 5rem;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #0d9488; /* Teal de alto contraste */
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    color: var(--navy-deep);
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 1.5rem;
+  }
+
+  .section-subtitle {
+    color: var(--muted); /* Slate 700 o similar, perfecto contraste */
+    font-weight: 500;
+    font-size: 1.15rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .process-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3rem;
+  }
+
+  .process-card {
+    background: #ffffff;
+    border-top: 4px solid var(--teal);
+    padding: 3rem 2.5rem;
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.04); /* Tarjeta flotante limpia */
+    transition: transform 0.3s ease;
+  }
+
+  .process-card:hover {
+    transform: translateY(-5px);
+  }
+
+  /* Adiós a las marcas de agua fantasma. Hola insignia de contraste directo */
+  .step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(45, 212, 191, 0.15);
+    color: #0d9488; /* Teal oscuro */
+    font-weight: 800;
+    font-family: var(--font-sans);
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .step-title {
+    color: var(--navy-deep);
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  .step-desc {
+    color: #334155; /* Gris profundo, altamente legible (Slate 700) */
+    font-size: 1.05rem;
+    line-height: 1.7;
+    font-weight: 400;
+  }
+
+  @media (max-width: 900px) {
+    .process-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+</style>

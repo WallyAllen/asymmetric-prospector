@@ -1,0 +1,139 @@
+---
+interface Caso {
+  caption: string;
+  imagePath: string;
+}
+interface Props {
+  title: string;
+  casos: Caso[];
+}
+const { title, casos } = Astro.props;
+---
+<section class="gallery-section" aria-labelledby="gallery-title">
+  <div class="gallery-container">
+    <h2 id="gallery-title">{title}</h2>
+    
+    <ul class="slider" role="list">
+      {casos.map((caso) => (
+        <li class="slider-item">
+          <figure class="card">
+            <div class="image-wrapper">
+              <img src={caso.imagePath} alt={`Evidencia clínica: ${caso.caption}`} loading="lazy" />
+            </div>
+            <figcaption>{caso.caption}</figcaption>
+          </figure>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>
+
+<style>
+  .gallery-section {
+    background-color: var(--navy-deep); /* Vinculado a variables globales */
+    padding: 6rem 0;
+    overflow: hidden;
+  }
+
+  .gallery-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  h2 {
+    color: #ffffff;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: clamp(2rem, 4vw, 3rem);
+    text-align: center;
+    margin: 0;
+    padding: 0 5%;
+  }
+
+  .slider {
+    display: flex;
+    gap: 1.5rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 0 5vw 2rem;
+    margin: 0;
+    list-style: none;
+  }
+
+  /* Scrollbar Estilizada y Visible */
+  .slider::-webkit-scrollbar {
+    height: 8px;
+  }
+  .slider::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    margin: 0 5vw;
+  }
+  .slider::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  .slider::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .slider-item {
+    flex: 0 0 80vw;
+    scroll-snap-align: center;
+  }
+
+  @media (min-width: 768px) {
+    .slider-item { flex: 0 0 40vw; }
+  }
+
+  @media (min-width: 1200px) {
+    .slider-item { flex: 0 0 30vw; }
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    height: 50vh;
+    min-height: 400px;
+    margin: 0;
+    background-color: rgba(255, 255, 255, 0.03); /* Elegante y sutil */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .image-wrapper {
+    height: 80%;
+    width: 100%;
+    overflow: hidden;
+    background-color: #000;
+  }
+
+  .image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .card:hover .image-wrapper img {
+    transform: scale(1.05);
+  }
+
+  figcaption {
+    height: 20%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+</style>

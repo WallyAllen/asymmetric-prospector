@@ -1,0 +1,55 @@
+---
+import '../styles/global.css';
+import HeroOdontologia from '../components/HeroOdontologia.astro';
+import TrustBadgesOdontologia from '../components/TrustBadgesOdontologia.astro';
+import TrustBadges from '../components/TrustBadges.astro';
+import ProcessOdontologia from '../components/ProcessOdontologia.astro';
+import SliderOdontologia from '../components/SliderOdontologia.astro';
+import { dentistasData } from '../data/demos/dentistas.js';
+
+const { seo, hero, coberturas, trust, process, casos } = dentistasData;
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content={seo.description}>
+    <title>{seo.title}</title>
+</head>
+<body>
+    <main>
+        <!-- 1. FOLD IMPONENTE (Oscuro) -->
+        <HeroOdontologia 
+            title={hero.title}
+            description={hero.description}
+            ctaText={hero.ctaText}
+            ctaLink={hero.ctaLink}
+            imagePath={hero.imagePath}
+        />
+        
+        <!-- 2. COBERTURAS MÉDICAS (Claro) -->
+        <TrustBadgesOdontologia 
+            title={coberturas.title} 
+            logos={coberturas.logos} 
+        />
+
+        <!-- 3. VALIDACIÓN TÉCNICA (Claro) -->
+        <TrustBadges badges={trust.badges} theme="teal" />
+        
+        <!-- 4. METODOLOGÍA (Claro) -->
+        <ProcessOdontologia 
+            title={process.title}
+            subtitle={process.subtitle}
+            steps={process.steps}
+        />
+
+        <!-- 5. CASOS CLÍNICOS (Oscuro - Quiebre visual) -->
+        <SliderOdontologia 
+            title={casos.title} 
+            casos={casos.items} 
+        />
+    </main>
+</body>
+</html>

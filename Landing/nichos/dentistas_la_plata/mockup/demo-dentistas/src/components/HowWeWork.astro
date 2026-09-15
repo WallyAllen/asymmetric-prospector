@@ -1,0 +1,72 @@
+---
+import { estudio } from '../data/estudio.js';
+---
+<section class="section-padding how-we-work">
+  <div class="container">
+    <div class="text-center">
+      <h2 class="section-title">Cómo Trabajamos</h2>
+      <p class="section-subtitle">Un proceso claro y transparente para resolver su situación legal.</p>
+    </div>
+    
+    <div class="steps-container">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <h3 class="step-title">Contacto Inicial</h3>
+        <p class="step-desc">Escríbanos por WhatsApp o llámenos contándonos brevemente su situación.</p>
+      </div>
+      
+      <div class="step-card">
+        <div class="step-number">02</div>
+        <h3 class="step-title">Evaluación</h3>
+        <p class="step-desc">Analizamos su caso sin compromiso y le indicamos las alternativas legales viables.</p>
+      </div>
+      
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <h3 class="step-title">Resolución</h3>
+        <p class="step-desc">Avanzamos con la estrategia definida, manteniéndolo informado en cada etapa.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .how-we-work {
+    background-color: var(--navy-deep);
+    color: var(--paper);
+  }
+  .how-we-work .section-title {
+    color: var(--paper);
+  }
+  .how-we-work .section-subtitle {
+    color: #94a3b8;
+  }
+  .steps-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 3rem;
+    margin-top: 4rem;
+  }
+  .step-card {
+    text-align: center;
+    position: relative;
+  }
+  .step-number {
+    font-family: var(--font-serif);
+    font-size: 4rem;
+    font-weight: 800;
+    color: rgba(45, 212, 191, 0.2);
+    line-height: 1;
+    margin-bottom: -1.5rem;
+  }
+  .step-title {
+    color: var(--paper);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+  }
+  .step-desc {
+    color: #e2e8f0;
+  }
+</style>

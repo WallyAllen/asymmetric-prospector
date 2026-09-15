@@ -4,7 +4,7 @@
     {
       "name": "mockup-static",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8532", "--directory", "nichos"],
+      "runtimeArgs": ["-m", "http.server", "8532"],
       "port": 8532
     }
   ]

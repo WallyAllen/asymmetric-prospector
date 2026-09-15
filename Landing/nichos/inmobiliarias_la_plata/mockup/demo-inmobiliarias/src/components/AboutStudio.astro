@@ -1,0 +1,95 @@
+---
+import { estudio } from '../data/estudio.js';
+---
+<section id="estudio" class="section-padding">
+  <div class="container about-container">
+    <div class="about-image">
+      <img src="/images/dike/studio-placeholder.jpg" alt={`Oficinas de ${estudio.nombre}`} />
+    </div>
+    <div class="about-content">
+      <h2 class="section-title">Sobre el Estudio</h2>
+      <p class="about-desc">
+        Dirigido por el <strong>{estudio.titular}</strong>, nuestro estudio se caracteriza por brindar una atención personalizada y estratégica.
+      </p>
+      
+      <ul class="about-list">
+        <li>
+          <span class="check">✓</span> 
+          <div>
+            <strong>Atención Exclusiva</strong>
+            <p>Tratamos cada caso con la dedicación que merece, sin delegar responsabilidades.</p>
+          </div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div>
+            <strong>Claridad y Transparencia</strong>
+            <p>Le explicamos su situación legal en términos simples y sin falsas promesas.</p>
+          </div>
+        </li>
+        <li>
+          <span class="check">✓</span>
+          <div>
+            <strong>Ubicación Estratégica</strong>
+            <p>Nuestras oficinas se encuentran en el centro de {estudio.ciudad}, de fácil acceso.</p>
+          </div>
+        </li>
+      </ul>
+      
+      <div class="about-cta">
+        <a href={estudio.whatsappUrl(estudio.mensajesWhatsapp.hero)} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          Coordinar una reunión
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .about-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+  .about-image img {
+    border-radius: 8px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  .about-desc {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    color: var(--text-dark);
+  }
+  .about-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .about-list li {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .check {
+    color: var(--gold-muted);
+    font-weight: bold;
+    font-size: 1.25rem;
+  }
+  .about-list strong {
+    display: block;
+    color: var(--navy);
+    margin-bottom: 0.25rem;
+  }
+  .about-list p {
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  @media (max-width: 992px) {
+    .about-container {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+  }
+</style>

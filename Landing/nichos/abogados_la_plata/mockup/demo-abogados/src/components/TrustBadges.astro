@@ -1,0 +1,68 @@
+---
+interface Props {
+  badges: { text: string }[];
+  theme?: 'teal' | 'gold';
+}
+
+const { badges, theme = 'teal' } = Astro.props;
+
+// Calculamos el color dinámico en base al tema
+const iconColor = theme === 'gold' ? '#927532' : '#0d9488';
+---
+
+<section class="trust-badges" aria-label="Validaciones de Autoridad">
+  <div class="container trust-container">
+    <div class="trust-grid">
+      {badges.map((badge) => (
+        <div class="trust-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="trust-icon">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span class="trust-text">{badge.text}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .trust-badges {
+    background-color: #ffffff; 
+    padding: 2.5rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .trust-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem 2.5rem;
+    align-items: center;
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .trust-text {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--navy-deep);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  @media (max-width: 768px) {
+    .trust-grid {
+      gap: 1rem 1.5rem;
+    }
+    .trust-text {
+      font-size: 0.72rem;
+    }
+  }
+</style>

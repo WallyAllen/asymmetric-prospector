@@ -10,6 +10,7 @@ nichos/
     mockup/      # Plantillas de demostración: el "molde" reutilizable del nicho
     landings/    # Proyectos reales para clientes que avanzaron (MVP en Vercel → producción en Cloudflare)
 agent_skills/    # Skills para los agentes de IA que ensamblan y despliegan estas páginas
+agencia/         # Landing propia de la agencia (no es un mockup de nicho, no se persigue a un prospecto con esto)
 ```
 
 Nichos disponibles actualmente:
@@ -17,7 +18,15 @@ Nichos disponibles actualmente:
 | Nicho | Mockups |
 |---|---|
 | `veterinarias_la_plata` | `veterinaria-aurora.html` (editorial, ilustrado, verde salvia) · `veterinaria-vivid.html` (fotográfico, colores vívidos, tipografía redondeada) |
-| `contadores_la_plata` | `estudio-meridiano.html` (documental, retícula de hoja de trabajo, azul petróleo + ámbar) |
+| `contadores_la_plata` | `estudio-meridiano.html` (documental, retícula de hoja de trabajo, azul petróleo + ámbar) · `estudio-aesop.html` (minimalista, fotográfico, cálido) · `estudio-boca.html` (corporativo, azul noche + dorado) |
+| `dentistas_la_plata` | `celestia-dental.html` (clínico moderno, ilustración 3D, azul) · `demo-dentistas/` (proyecto Astro, ver excepción abajo) |
+| `abogados_la_plata` | `estudio-monocle.html` (clásico editorial, fotográfico, burdeos) · `demo-abogados/` y `juridico-dike/` (proyectos Astro, ver excepción abajo) |
+| `inmobiliarias_la_plata` | `demo-inmobiliarias/` (proyecto Astro, ver excepción abajo) |
+| `kinesiologia_mendoza` | `korpo-kinesiologia.html` (clínico cálido, bento grid, teal + coral, ruteo de WhatsApp por tratamiento) |
+
+### Excepción: mockups en Astro
+
+`demo-abogados/`, `demo-dentistas/`, `demo-inmobiliarias/` y `juridico-dike/` son proyectos [Astro](https://astro.build) completos (con build propio, dependencias de npm y su propio `CLAUDE.md`), importados de otro repo de mockups. Rompen la regla de "un único HTML autocontenido" a propósito — es una excepción documentada, no el estándar. Para correrlos: `cd` a la carpeta, `npm install`, `npm run dev`. No tienen `.env` commiteado (cada uno trae su `.env.example`); si alguno lo necesita para funcionar en local, pedile las credenciales a quien lo armó — nunca las hardcodees ni las commitees.
 
 ## Cómo funciona un mockup
 
@@ -40,13 +49,17 @@ Al final de cada archivo hay un bloque comentado con:
 
 ## Previsualizar localmente
 
-Con [Claude Code](https://claude.com/claude-code) ya está configurado un servidor estático en `.claude/launch.json` que sirve el directorio `nichos/`. También podés levantar cualquier servidor estático apuntando ahí, por ejemplo:
+Con [Claude Code](https://claude.com/claude-code) ya está configurado un servidor estático en `.claude/launch.json` que sirve la raíz del repo. También podés levantar cualquier servidor estático desde la raíz, por ejemplo:
 
 ```bash
-python -m http.server 8532 --directory nichos
+python -m http.server 8532
 ```
 
-Y abrir `http://localhost:8532/<nicho>/mockup/<archivo>.html`.
+Y abrir `http://localhost:8532/` para la galería, o directo `http://localhost:8532/nichos/<nicho>/mockup/<archivo>.html`.
+
+## Deploy
+
+El repo se sirve como sitio estático (Vercel, Cloudflare Pages, o cualquier hosting estático conectado al repo de GitHub) sin ningún build step. `index.html` en la raíz es la galería que enlaza a cada mockup — sin él, la URL raíz del deploy da 404 aunque los mockups individuales carguen bien. Al agregar un nicho o un mockup nuevo, sumalo también ahí.
 
 ## Stack
 

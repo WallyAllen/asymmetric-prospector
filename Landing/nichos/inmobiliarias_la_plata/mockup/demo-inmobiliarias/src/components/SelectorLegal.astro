@@ -1,0 +1,154 @@
+---
+interface Props {
+  numeroWa: string;
+}
+const { numeroWa } = Astro.props;
+---
+<section class="triage-section section-padding">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-label">Análisis Preliminar</span>
+      <h2 class="section-title">¿Cuál es tu situación laboral actual?</h2>
+      <p class="section-subtitle">Selecciona tu caso para que un especialista evalúe la viabilidad de tu reclamo y determine la estrategia a seguir.</p>
+    </div>
+
+    <div class="triage-grid" data-wa={numeroWa}>
+      <button class="triage-card" data-case="Despido Injustificado">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          </div>
+          <h3 class="card-title">Despido Injustificado</h3>
+          <p class="card-desc">Falta de pago, trabajo en negro, hostigamiento laboral o telegrama de despido encubierto.</p>
+          <span class="card-cta">Consultar ahora <span class="arrow">&rarr;</span></span>
+        </div>
+      </button>
+      
+      <button class="triage-card" data-case="Accidente de Trabajo (ART)">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+          </div>
+          <h3 class="card-title">Accidente de Trabajo (ART)</h3>
+          <p class="card-desc">Accidentes in itinere, caídas, incidentes con maquinaria o rechazo de cobertura por parte de la aseguradora.</p>
+          <span class="card-cta">Consultar ahora <span class="arrow">&rarr;</span></span>
+        </div>
+      </button>
+
+      <button class="triage-card" data-case="Enfermedad Profesional">
+        <div class="card-accent"></div>
+        <div class="card-body">
+          <div class="card-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+          </div>
+          <h3 class="card-title">Enfermedad Profesional</h3>
+          <p class="card-desc">Hernias de disco, tendinitis, hipoacusia o estrés laboral crónico derivados de la rutina de trabajo.</p>
+          <span class="card-cta">Consultar ahora <span class="arrow">&rarr;</span></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<style>
+  .triage-section { background-color: #0B1120; padding: 6rem 0; color: #F9FAFB; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .section-header { margin-bottom: 4rem; text-align: center; }
+  .section-label { color: #C5A059; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; display: inline-block; margin-bottom: 1rem; }
+  .section-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3rem); margin: 0 0 1.5rem 0; color: #F9FAFB; }
+  .section-subtitle { color: #8892B0; max-width: 650px; margin: 0 auto; font-size: 1.1rem; line-height: 1.6; }
+  
+  .triage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+  
+  .triage-card {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.35s ease;
+    color: #F9FAFB;
+    outline: none;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .card-accent {
+    width: 4px;
+    min-height: 100%;
+    background-color: rgba(197, 160, 89, 0.15);
+    transition: background-color 0.35s ease;
+    flex-shrink: 0;
+  }
+
+  .card-body {
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .triage-card:hover {
+    background-color: rgba(197, 160, 89, 0.06);
+    border-color: rgba(197, 160, 89, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .triage-card:hover .card-accent {
+    background-color: #C5A059;
+  }
+
+  .triage-card:hover .card-cta {
+    color: #C5A059;
+    opacity: 1;
+  }
+
+  .triage-card:hover .arrow {
+    transform: translateX(4px);
+  }
+
+  .card-icon { color: #C5A059; margin-bottom: 1.25rem; }
+  .card-title { font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 0.75rem; color: #F9FAFB; font-weight: 700; }
+  .card-desc { color: #8892B0; font-size: 0.95rem; line-height: 1.6; margin: 0 0 1.5rem 0; flex-grow: 1; }
+
+  .card-cta {
+    font-size: 0.8rem;
+    color: rgba(197, 160, 89, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.35s ease;
+  }
+
+  .arrow {
+    transition: transform 0.35s ease;
+    display: inline-block;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.querySelector('.triage-grid');
+    if (!grid) return;
+    
+    const numeroWa = grid.getAttribute('data-wa');
+    const cards = grid.querySelectorAll('.triage-card');
+    
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const caso = card.getAttribute('data-case');
+        const mensaje = `Hola, necesito asesoramiento urgente por un caso de ${caso}. ¿Podrían evaluar mi situación?`;
+        const url = `https://wa.me/${numeroWa}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
+      });
+    });
+  });
+</script>
