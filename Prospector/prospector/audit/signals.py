@@ -6,14 +6,17 @@ de CTAs, desbordes). La interpretación vive en `rules.py`.
 from __future__ import annotations
 
 import asyncio
+import socket
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from ..config import DESKTOP_VIEWPORT, MOBILE_DEVICE_SCALE, MOBILE_UA, MOBILE_VIEWPORT, SHOTS_DIR, AuditSettings
 from ..logging_setup import get_logger
 from ..models import Metrics
+from ..telefono import de_enlace_whatsapp, normalizar
 from ..utils import registrable_domain, slugify
 from .probe_js import AUDIT_JS, WEB_VITALS_INIT_JS
 
@@ -29,6 +32,11 @@ class ProbeResult:
     capturas: dict[str, Path] = field(default_factory=dict)
     ok: bool = False
     error: str | None = None
+    # None mientras no hizo falta preguntarlo. False = el dominio NO existe
+    # (caída real). True = el dominio existe pero el navegador no pudo entrar:
+    # eso no es una web caída, es una medición fallida, y no da para escribirle
+    # a nadie diciéndole que su sitio no anda.
+    dns_ok: bool | None = None
 
 
 class SiteProbe:
@@ -81,12 +89,36 @@ class SiteProbe:
         carpeta = SHOTS_DIR / (slug or slugify(registrable_domain(url) or url))
         carpeta.mkdir(parents=True, exist_ok=True)
 
-        try:
-            await self._probe_desktop(url, resultado, carpeta)
-        except Exception as exc:  # noqa: BLE001 - un sitio caído es un dato, no un crash
-            resultado.error = f"{type(exc).__name__}: {exc}"
+        # Dos intentos, con una pausa. El mensaje que se manda cuando un sitio
+        # no carga dice literalmente "probé dos veces": antes era mentira,
+        # había un solo `goto`. Y un fallo de red puntual alcanzaba para
+        # marcar como caída una web que anda perfecto.
+        ultimo: Exception | None = None
+        for intento in range(2):
+            try:
+                await self._probe_desktop(url, resultado, carpeta)
+                ultimo = None
+                break
+            except Exception as exc:  # noqa: BLE001 - un sitio caído es un dato, no un crash
+                ultimo = exc
+                if intento == 0:
+                    await asyncio.sleep(2.0)
+
+        if ultimo is not None:
+            resultado.error = f"{type(ultimo).__name__}: {ultimo}"
             resultado.metrics.error = resultado.error
-            log.warning("No se pudo auditar %s (%s)", url, resultado.error)
+            # ¿El dominio existe? Se consulta el DNS por fuera del navegador,
+            # que es la única forma de distinguir un dominio muerto de un
+            # tropiezo del navegador o de la conexión de casa. Medido sobre la
+            # tanda anterior: de 36 sitios marcados "inaccesible", 17 tenían el
+            # dominio perfectamente vivo. A esos 17 el sistema les escribía
+            # "intenté entrar y no cargó", que el dueño desmiente abriendo su
+            # web — la forma más rápida de quemar la credibilidad que da el
+            # resto del diagnóstico.
+            resultado.dns_ok = await self._resuelve(url)
+            nivel = log.warning if not resultado.dns_ok else log.info
+            nivel("No se pudo auditar %s (%s)%s", url, resultado.error,
+                  "" if not resultado.dns_ok else " — pero el dominio resuelve: no se declara caído")
             return resultado
 
         try:
@@ -168,6 +200,20 @@ class SiteProbe:
 
         await context.close()
 
+    @staticmethod
+    async def _resuelve(url: str) -> bool:
+        """True si el dominio resuelve por DNS, mirado fuera del navegador."""
+        host = urlparse(url).hostname
+        if not host:
+            return False
+        bucle = asyncio.get_running_loop()
+        try:
+            await asyncio.wait_for(
+                bucle.getaddrinfo(host, None), timeout=6.0)
+            return True
+        except (OSError, socket.gaierror, asyncio.TimeoutError):
+            return False
+
     async def _probe_mobile(self, url: str, res: ProbeResult, carpeta: Path) -> None:
         context = await self._new_context(mobile=True)
         page = await context.new_page()
@@ -214,6 +260,27 @@ class SiteProbe:
         await context.close()
 
 
+def _numero_de_whatsapp(hrefs) -> str | None:
+    """El primer enlace de WhatsApp de la web que dé un número usable.
+
+    Es el dato de contacto de mejor calidad del sistema y hasta ahora se
+    descartaba: `probe_js` contaba estos enlaces y tiraba el href.
+    """
+    for href in hrefs or []:
+        numero = de_enlace_whatsapp(href)
+        if numero:
+            return numero.e164
+    return None
+
+
+def _primer_tel(hrefs) -> str | None:
+    for href in hrefs or []:
+        numero = normalizar(href)
+        if numero:
+            return numero.e164
+    return None
+
+
 def _redondear(valor) -> float | None:
     try:
         return round(float(valor), 1) if valor else None
@@ -237,6 +304,8 @@ def _consolidar(res: ProbeResult) -> None:
     met.tiene_formulario = bool(d.get("formularios"))
     met.tiene_tel = bool(d.get("telLinks"))
     met.tiene_whatsapp = bool(d.get("whatsapp"))
+    met.whatsapp_web = _numero_de_whatsapp(d.get("whatsappHrefs"))
+    met.tel_web = _primer_tel(d.get("telHrefs"))
     met.generador = d.get("generador")
     met.ano_copyright = d.get("anoCopyright")
     met.popup_intrusivo = bool(d.get("popupIntrusivo"))

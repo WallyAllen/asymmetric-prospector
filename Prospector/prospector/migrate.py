@@ -21,6 +21,7 @@ Es idempotente: si ya no quedan restos del formato viejo, no hace nada.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from .config import AUDITED_FILE, COMPOSED_FILE, RAW_FILE
@@ -110,3 +111,76 @@ def migrar_todo() -> int:
 
 if __name__ == "__main__":
     migrar_todo()
+
+
+# ═══════════════ Recuperación del canal WhatsApp ═══════════════
+
+def recuperar_whatsapp(simular: bool = True, fecha: str | None = None) -> int:
+    """Rescata los contactos de WhatsApp que se mandaron sin dejar rastro.
+
+    `scripts/send_whatsapp.py` marcaba `estado = "enviado"` —el mismo valor
+    que usa el correo— y nada más: ni fecha, ni canal, ni entrada en ningún
+    registro. Se los reconoce por descarte: están en "enviado", no tienen
+    email (así que el mailer nunca pudo haberlos tocado), tienen teléfono y no
+    figuran en `registro_envios.json`.
+
+    La fecha no está en ningún lado, así que o la aporta quien los mandó
+    (`fecha="2026-09-14"`) o queda vacía. Nunca se inventa: cuando se aporta
+    se guarda con `fecha_aproximada: true`, porque se conoce el día pero no la
+    hora, y un `stats` que mida "horas hasta la respuesta" tiene que saberlo.
+    """
+    if fecha:
+        try:
+            datetime.strptime(fecha, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"fecha inválida: {fecha!r}. Se espera AAAA-MM-DD.") from None
+    enviado_el = f"{fecha}T12:00:00+00:00" if fecha else None
+    from .config import COMPOSED_FILE, SENT_FILE, WHATSAPP_SENT_FILE
+    from .storage import load_leads, read_json, save_leads, write_json
+
+    leads = load_leads(COMPOSED_FILE)
+    del_correo = {e.get("id") for e in (read_json(SENT_FILE, []) or [])}
+    registro = read_json(WHATSAPP_SENT_FILE, []) or []
+    ya = {e.get("id") for e in registro}
+
+    huerfanos = [
+        lead for lead in leads
+        if lead.estado == "enviado" and not lead.email and lead.telefono
+        and lead.id not in del_correo and lead.id not in ya
+    ]
+    if not huerfanos:
+        log.info("WhatsApp: no hay envíos sin registrar")
+        return 0
+
+    log.info("WhatsApp: %d contactos enviados sin ningún registro%s%s",
+             len(huerfanos),
+             f", fechados el {fecha}" if fecha else ", sin fecha conocida",
+             " (simulación)" if simular else "")
+    if simular:
+        for lead in huerfanos[:5]:
+            log.info("    %s · %s", lead.etiqueta, lead.telefono)
+        return len(huerfanos)
+
+    for lead in huerfanos:
+        registro.append({
+            "id": lead.id,
+            "nombre": lead.nombre,
+            "telefono": lead.telefono,
+            "url": lead.url,
+            "nicho": lead.nicho,
+            "score": lead.audit.score if lead.audit else None,
+            "veredicto": lead.audit.veredicto if lead.audit else None,
+            "toque": 1,
+            "enviado_el": enviado_el,
+            "recuperado": True,
+            # Se conoce el día, no la hora: no sirve para medir tiempos de
+            # respuesta, sí para saber cuándo vence la ventana del toque 2.
+            "fecha_aproximada": bool(fecha),
+        })
+        lead.estado = "enviado_whatsapp"
+        lead.canal = "whatsapp"
+        lead.enviado_el = enviado_el
+    write_json(WHATSAPP_SENT_FILE, registro)
+    save_leads(COMPOSED_FILE, leads)
+    log.info("WhatsApp: %d contactos incorporados al registro", len(huerfanos))
+    return len(huerfanos)

@@ -84,7 +84,8 @@ def enriquecer_contactos(cfg: Settings = settings) -> list[Lead]:
 
 # ─────────────────────────────── Etapa 2 ───────────────────────────────
 
-def auditar_leads(cfg: Settings = settings, forzar: bool = False, limite: int | None = None) -> list[Lead]:
+def auditar_leads(cfg: Settings = settings, forzar: bool = False, limite: int | None = None,
+                  solo_veredicto: str | None = None, reanudar: bool = False) -> list[Lead]:
     ensure_dirs()
     crudos = load_leads(RAW_FILE)
     auditados = load_leads(AUDITED_FILE)
@@ -92,7 +93,11 @@ def auditar_leads(cfg: Settings = settings, forzar: bool = False, limite: int | 
 
     # Preservamos el trabajo previo: merge_leads da prioridad al lead ya auditado.
     objetivo = leads if limite is None else leads[:limite]
-    asyncio.run(auditar(objetivo, cfg, forzar=forzar))
+    def guardar(_parcial) -> None:
+        save_leads(AUDITED_FILE, leads)
+
+    asyncio.run(auditar(objetivo, cfg, forzar=forzar, solo_veredicto=solo_veredicto,
+                        reanudar=reanudar, on_progreso=guardar))
 
     save_leads(AUDITED_FILE, leads)
     _resumen(leads, "Auditoría")

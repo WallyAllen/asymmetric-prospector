@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "libra-propiedades",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../Landing/nichos/inmobiliarias/landings/libra-propiedades", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

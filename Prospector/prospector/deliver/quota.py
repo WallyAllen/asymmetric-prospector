@@ -4,14 +4,20 @@ from __future__ import annotations
 from datetime import datetime, time
 from pathlib import Path
 
-from ..config import MailSettings
+from ..config import MailSettings, WhatsAppSettings
 from ..storage import read_json, write_json
 
 
 class Quota:
-    """Lleva la cuenta de envíos por día y decide si toca parar."""
+    """Lleva la cuenta de envíos por día y decide si toca parar.
 
-    def __init__(self, cfg: MailSettings, ruta: Path) -> None:
+    Sirve para los dos canales: solo necesita `daily_cap`, `skip_weekends` y
+    la ventana horaria, que `MailSettings` y `WhatsAppSettings` tienen por
+    igual. WhatsApp no tenía ninguna de las tres, que es justo el canal donde
+    pasarse cuesta el número en vez de cuesta entregabilidad.
+    """
+
+    def __init__(self, cfg: MailSettings | WhatsAppSettings, ruta: Path) -> None:
         self.cfg = cfg
         self.ruta = ruta
         self.registro: dict[str, int] = read_json(ruta, {}) or {}
@@ -35,7 +41,7 @@ class Quota:
     def en_ventana(self, momento: datetime | None = None) -> tuple[bool, str]:
         ahora = momento or datetime.now()
         if self.cfg.skip_weekends and ahora.weekday() >= 5:
-            return False, "es fin de semana (los correos de sábado y domingo se leen peor)"
+            return False, "es fin de semana (un mensaje de trabajo el sábado se lee peor)"
         inicio = time(self.cfg.window_start_h, 0)
         fin = time(self.cfg.window_end_h, 0)
         if not (inicio <= ahora.time() <= fin):

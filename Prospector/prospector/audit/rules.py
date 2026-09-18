@@ -19,10 +19,26 @@ Por eso cada regla se etiqueta con una `categoria`:
                  poco o nada: no mueven el score, solo aportan color si ya hay
                  algo más grave que contar.
 
-Cada `Finding` produce tres cosas:
-  · evidencia  → el dato duro, irrefutable ("LCP 6.4 s en móvil")
-  · argumento  → la traducción a dinero, que es lo que va al correo
-  · zona       → el rectángulo que se marcará en rojo sobre la captura
+Cada `Finding` produce:
+  · evidencia     → el dato duro, irrefutable ("LCP 6,4 s en el celular")
+  · observacion   → lo que SE VE, sin consecuencia. Es la primera línea del mensaje.
+  · consecuencia  → la traducción a clientes perdidos. Se dice UNA vez.
+  · puente        → la transición hacia la oferta, propia de ESTE defecto.
+  · zona          → el rectángulo que se marcará en rojo sobre la captura
+
+Las tres piezas de texto van partidas a propósito: cuando eran un párrafo
+único (`argumento`), `writer.py` tenía que agregar detrás su propia
+consecuencia genérica —siempre la misma, siempre sobre el botón de contacto—
+y salían dos consecuencias por mensaje, la segunda muchas veces sin relación
+con el hallazgo. `Finding` deriva `argumento` solo, para compatibilidad.
+
+Dialecto: todo esto se escribe **en rioplatense y en segunda persona del
+singular (vos)**, que es el registro del remitente. Antes estaba en español
+peninsular ("pulsar", "estéis", "os busca", "se mueven de sitio") y lo
+traducía `writer.SLOP_VOSEO` a la salida: una traducción de última milla que
+cubría las conjugaciones pero no el léxico, y que en un caso ("estéis" →
+"estén") metía un plural dentro de un texto en singular. El filtro sigue ahí
+como red de seguridad para lo que venga de la IA, no como traductor.
 """
 from __future__ import annotations
 
@@ -66,6 +82,17 @@ def es_demostrable(finding: Finding) -> bool:
 def regla(func: Regla) -> Regla:
     _REGLAS.append(func)
     return func
+
+
+def _coma(valor: float, decimales: int = 1) -> str:
+    """Decimal con coma: es un texto en español y se lee en un celular.
+
+    `f"{7.5:.1f}"` daba "7.5 segundos" dentro de un mensaje que a cuatro
+    líneas de distancia escribía el rating como "4,8". Dos separadores
+    decimales distintos en el mismo párrafo es de las cosas que más rápido
+    delatan que el texto lo armó un programa.
+    """
+    return f"{valor:.{decimales}f}".replace(".", ",")
 
 
 def _rect(res: ProbeResult, nombre: str, movil: bool = False) -> dict | None:
@@ -114,10 +141,8 @@ def es_directorio(res: ProbeResult) -> Finding | None:
         peso=0,
         categoria="killer",
         evidencia=" · ".join(evidencias),
-        argumento=(
-            "Esta URL pertenece a un portal que lista múltiples negocios. "
-            "No es un prospecto: no hay un dueño que necesite mejorar su landing."
-        ),
+        observacion="Esta URL pertenece a un portal que lista múltiples negocios.",
+        consecuencia="No es un prospecto: no hay un dueño que necesite mejorar su landing.",
     )
 
 
@@ -128,6 +153,13 @@ def es_directorio(res: ProbeResult) -> Finding | None:
 def sitio_inaccesible(res: ProbeResult) -> Finding | None:
     if res.ok and (res.metrics.http_status or 200) < 400:
         return None
+    # El dominio resuelve pero el navegador no pudo entrar: puede ser un
+    # tropiezo de red, un TLS raro, un timeout o un bloqueo antibot. No es
+    # "tu web está caída", y decírselo al dueño es una afirmación que
+    # desmiente abriendo su propia web. Se maneja como medición fallida
+    # (ver `evaluar`), no como hallazgo.
+    if res.dns_ok:
+        return None
     detalle = res.error or f"HTTP {res.metrics.http_status}"
     return Finding(
         rule_id="sitio_inaccesible",
@@ -136,10 +168,9 @@ def sitio_inaccesible(res: ProbeResult) -> Finding | None:
         peso=100,
         categoria="killer",
         evidencia=detalle,
-        argumento=(
-            "Tu web no cargó al intentar entrar desde una conexión normal. "
-            "El 100% de las visitas que se encuentran esto se van a la competencia y no vuelven."
-        ),
+        observacion="tu web no cargó cuando intenté entrar, con una conexión normal",
+        consecuencia="el que llega ahí no vuelve a probar: se va al siguiente resultado y no vuelve",
+        puente="si venció el dominio o el hosting, o hay un error de configuración, suele ser rápido de resolver",
     )
 
 
@@ -154,11 +185,10 @@ def sin_viewport(res: ProbeResult) -> Finding | None:
         peso=38,
         categoria="killer",
         viewport="mobile",
-        evidencia="Falta la etiqueta meta viewport: el móvil renderiza la versión de escritorio encogida",
-        argumento=(
-            "Quien entra desde el celular ve la web de escritorio miniaturizada, con el texto ilegible y "
-            "obligado a hacer zoom para leer cualquier cosa. Eso es fricción antes de la primera frase."
-        ),
+        evidencia="Falta la etiqueta meta viewport: el celular muestra la versión de escritorio encogida",
+        observacion="desde el celular se ve la web de escritorio miniaturizada, con el texto ilegible",
+        consecuencia="hay que hacer zoom con los dedos para leer cualquier cosa, y eso espanta antes de la primera frase",
+        puente="adaptarla al celular es lo que más mueve la aguja acá, y no implica rehacer el diseño",
         zona=_rect(res, "fold", movil=True),
     )
 
@@ -177,10 +207,9 @@ def sin_cta_en_fold(res: ProbeResult) -> Finding | None:
         peso=35,
         categoria="killer",
         evidencia="0 botones de acción en la primera pantalla",
-        argumento=(
-            "Al entrar no hay ni un botón que diga qué hacer: ni pedir cita, ni llamar, ni escribir. "
-            "El visitante tiene que buscar cómo contactarte, y casi nadie se molesta en buscar."
-        ),
+        observacion="al entrar no hay ningún botón que diga qué hacer: ni turno, ni llamar, ni escribir",
+        consecuencia="el que entra tiene que ponerse a buscar cómo contactarte, y casi nadie busca",
+        puente="poner un botón visible arriba de todo es lo primero que suelo mover, y se nota enseguida",
         zona=_rect(res, "hero") or _rect(res, "fold"),
     )
 
@@ -198,11 +227,10 @@ def sin_vias_de_contacto(res: ProbeResult) -> Finding | None:
         severidad=9,
         categoria="killer",
         peso=35,
-        evidencia="Sin formulario, sin teléfono pulsable ni WhatsApp en la página",
-        argumento=(
-            "No hay formulario, ni teléfono pulsable, ni WhatsApp. Quien quiere contratarte tiene que "
-            "copiar un número a mano: la fricción justa para que lo deje para luego y no vuelva."
-        ),
+        evidencia="Sin formulario, sin teléfono para tocar ni WhatsApp en la página",
+        observacion="no hay formulario, ni teléfono para tocar, ni WhatsApp",
+        consecuencia="el que te quiere contratar tiene que copiar el número a mano, y ahí lo deja para después",
+        puente="un botón de WhatsApp arriba suele ser el arreglo más rentable de toda la web",
     )
 
 
@@ -214,23 +242,25 @@ def carga_lenta(res: ProbeResult) -> Finding | None:
     segundos = lcp / 1000
     if segundos >= 4:
         severidad, peso, categoria = 9, 28, "killer"
-        remate = "Google considera 'malo' todo lo que pase de 4 segundos, y lo castiga en el buscador."
+        remate = "Google considera «malo» todo lo que pase de 4 segundos y lo baja en el buscador"
     else:
         # Entre 2,5 y 4 s es fricción real, pero todavía dentro de lo tolerable:
         # no alcanza para llamarlo "el motivo" de que se pierdan clientes.
         severidad, peso, categoria = 5, 7, "moderado"
-        remate = "El umbral que Google considera bueno son 2,5 segundos."
+        remate = "el umbral que Google considera bueno son 2,5 segundos"
     return Finding(
         rule_id="carga_lenta",
-        titulo=f"Tarda {segundos:.1f} s en mostrar el contenido principal",
+        titulo=f"Tarda {_coma(segundos)} s en mostrar el contenido principal",
         severidad=severidad,
         peso=peso,
         categoria=categoria,
-        evidencia=f"LCP {segundos:.1f} s medido en una conexión normal",
-        argumento=(
-            f"Tu web tarda {segundos:.1f} segundos en mostrar lo importante, y eso lo medí yo mismo "
-            f"entrando igual que entraría cualquiera. {remate}"
+        evidencia=f"LCP {_coma(segundos)} s medido en una conexión normal",
+        observacion=(
+            f"tu web tarda {_coma(segundos)} segundos en mostrar lo importante, "
+            f"y lo medí entrando igual que entraría cualquiera"
         ),
+        consecuencia=remate,
+        puente="casi siempre es peso de imágenes, y se corrige sin tocar el diseño",
         zona=_rect(res, "imagenPrincipal"),
     )
 
@@ -252,10 +282,9 @@ def overflow_mobile(res: ProbeResult) -> Finding | None:
         categoria="killer",
         viewport="mobile",
         evidencia=f"El contenido mide {ancho}px de ancho en una pantalla de 390px",
-        argumento=(
-            "En el móvil hay que desplazarse en horizontal para leer: el contenido se sale de la pantalla. "
-            "Es la señal más rápida de que una web está descuidada."
-        ),
+        observacion="en el celular hay que arrastrar para los costados para leer: el contenido se sale de la pantalla",
+        consecuencia="es la señal más rápida de que una web está descuidada, y se ve en los primeros dos segundos",
+        puente="ordenar el ancho en el celular es un arreglo acotado, no un rediseño",
         zona=_rect(res, "fold", movil=True),
     )
 
@@ -277,10 +306,9 @@ def tecnologia_obsoleta(res: ProbeResult) -> Finding | None:
         peso=20,
         categoria="killer",
         evidencia="; ".join(motivos),
-        argumento=(
-            "La web está construida con técnicas que los navegadores actuales ya no soportan bien. "
-            "No es cuestión de estética: partes del sitio directamente no funcionan."
-        ),
+        observacion="la web está armada con técnicas que los navegadores de hoy ya no soportan bien",
+        consecuencia="no es una cuestión de estética: hay partes del sitio que directamente no funcionan",
+        puente="rehacer la portada con lo de hoy es más barato que parchar lo viejo",
     )
 
 
@@ -297,15 +325,14 @@ def brochure_sin_propuesta(res: ProbeResult) -> Finding | None:
         return None
     return Finding(
         rule_id="fold_vacio",
-        titulo="La primera pantalla no explica qué ofreces",
+        titulo="La primera pantalla no explica qué ofrecés",
         severidad=7,
         peso=10,
         categoria="moderado",
         evidencia=f"Solo {palabras} palabras visibles al entrar, sin llamada a la acción",
-        argumento=(
-            "Lo primero que se ve es una imagen grande y poco más: en los 3 segundos que decide el visitante "
-            "no hay ni una frase que diga qué haces ni por qué elegirte."
-        ),
+        observacion="lo primero que se ve es una imagen grande y poco más",
+        consecuencia="en los tres segundos en que se decide el que entra no hay ni una frase que diga qué hacés ni por qué elegirte",
+        puente="con un titular claro y un botón, esa misma pantalla empieza a trabajar",
         zona=_rect(res, "hero") or _rect(res, "imagenPrincipal"),
     )
 
@@ -321,10 +348,9 @@ def sin_https(res: ProbeResult) -> Finding | None:
         peso=10,
         categoria="moderado",
         evidencia="La web se sirve por HTTP sin cifrar",
-        argumento=(
-            "El navegador marca tu web como «No segura» antes de que el visitante lea una sola palabra. "
-            "Google además penaliza eso en el posicionamiento."
-        ),
+        observacion="el navegador marca tu web como «No segura» antes de que se lea una sola palabra",
+        consecuencia="mucha gente se vuelve ahí mismo, y además Google lo penaliza en el posicionamiento",
+        puente="el certificado suele ser gratis y se activa en el panel del hosting",
         zona=_rect(res, "nav"),
     )
 
@@ -340,10 +366,9 @@ def popup_intrusivo(res: ProbeResult) -> Finding | None:
         peso=8,
         categoria="moderado",
         evidencia="Capa fija ocupando parte importante de la primera pantalla",
-        argumento=(
-            "Lo primero que ve el visitante no es tu oferta, es un aviso que tapa la pantalla y hay que cerrar. "
-            "Se puede cumplir con la normativa sin sacrificar la primera impresión."
-        ),
+        observacion="lo primero que aparece no es tu oferta, es un aviso que tapa la pantalla y hay que cerrar",
+        consecuencia="se pierde la primera impresión justo en el segundo en que se decide si quedarse",
+        puente="se puede cumplir con la normativa sin comerse la portada",
         zona=_rect(res, "popup"),
     )
 
@@ -355,16 +380,15 @@ def texto_ilegible_movil(res: ProbeResult) -> Finding | None:
         return None
     return Finding(
         rule_id="texto_pequeno_movil",
-        titulo="Texto demasiado pequeño en móvil",
+        titulo="Texto demasiado chico en el celular",
         severidad=5,
         peso=6,
         categoria="moderado",
         viewport="mobile",
         evidencia=f"{cantidad} bloques de texto por debajo de 13px",
-        argumento=(
-            "En el teléfono hay que ampliar con los dedos para leer buena parte de la página. "
-            "Cada gesto extra es gente que abandona."
-        ),
+        observacion="en el celular hay que agrandar con los dedos para leer buena parte de la página",
+        consecuencia="cada gesto de más es gente que abandona antes de llegar al contacto",
+        puente="subir el cuerpo de texto es un cambio de minutos",
         zona=_rect(res, "fold", movil=True),
     )
 
@@ -376,42 +400,39 @@ def botones_pequenos(res: ProbeResult) -> Finding | None:
         return None
     return Finding(
         rule_id="tap_targets",
-        titulo="Botones difíciles de pulsar en móvil",
+        titulo="Botones difíciles de tocar en el celular",
         severidad=5,
         peso=5,
         categoria="moderado",
         viewport="mobile",
         evidencia=f"{cantidad} enlaces o botones por debajo del tamaño mínimo táctil (40px)",
-        argumento=(
-            "Varios botones son tan pequeños que se fallan al pulsarlos con el dedo. "
-            "Cuando el botón que falla es el de contacto, la venta se pierde ahí."
-        ),
+        observacion="varios botones son tan chicos que se fallan al tocarlos con el dedo",
+        consecuencia="cuando el que falla es el de contacto, la consulta se pierde ahí mismo",
+        puente="agrandar el área táctil de los botones es un arreglo de un rato",
     )
 
 
 @regla
 def sin_telefono_pulsable(res: ProbeResult) -> Finding | None:
     met = res.metrics
-    # El WhatsApp YA resuelve "contacto rápido desde el móvil": pedir un
+    # El WhatsApp YA resuelve "contacto rápido desde el celular": pedir un
     # tel: además de eso es nitpicking, no un defecto real (y decirle a
-    # alguien "tu botón no se puede pulsar" cuando el de WhatsApp funciona
+    # alguien "tu botón no se puede tocar" cuando el de WhatsApp funciona
     # perfecto es un argumento falso que se detecta a la primera mirada).
     # Esto solo importa cuando la única vía de contacto es un formulario.
     if not res.ok or met.tiene_tel or met.tiene_whatsapp or not met.tiene_formulario:
         return None
     return Finding(
         rule_id="sin_tel_movil",
-        titulo="El teléfono no se puede pulsar desde el móvil",
+        titulo="El teléfono no se puede tocar desde el celular",
         severidad=5,
         peso=4,
         categoria="moderado",
         viewport="mobile",
         evidencia="Ningún enlace tel: ni de WhatsApp en la página, solo formulario",
-        argumento=(
-            "Desde el móvil, la única forma de contactar es completar un formulario: no hay teléfono "
-            "ni WhatsApp para escribir directo. Un botón de llamada o de WhatsApp suele ser "
-            "la mejora más rentable de toda la web."
-        ),
+        observacion="desde el celular la única forma de contactarte es llenar un formulario",
+        consecuencia="no hay teléfono ni WhatsApp para escribir directo, y esa vuelta la abandona mucha gente",
+        puente="un botón de llamada o de WhatsApp suele ser el arreglo más rentable de toda la web",
     )
 
 
@@ -426,11 +447,10 @@ def layout_inestable(res: ProbeResult) -> Finding | None:
         severidad=5,
         peso=5,
         categoria="moderado",
-        evidencia=f"CLS de {cls:.2f} (Google considera aceptable por debajo de 0,1)",
-        argumento=(
-            "Mientras carga, los bloques se mueven de sitio: se acaba pulsando donde no era. "
-            "Es de los errores que más irritan y Google lo mide explícitamente."
-        ),
+        evidencia=f"CLS de {_coma(cls, 2)} (Google considera aceptable por debajo de 0,1)",
+        observacion="mientras carga, los bloques se mueven de lugar y terminás tocando donde no era",
+        consecuencia="es de los errores que más irritan, y Google lo mide aparte",
+        puente="se arregla reservando el espacio de las imágenes, sin tocar el diseño",
     )
 
 
@@ -447,10 +467,12 @@ def web_desactualizada(res: ProbeResult) -> Finding | None:
         peso=5,
         categoria="moderado",
         evidencia=f"Copyright {ano} frente al año actual {actual}",
-        argumento=(
-            f"El pie de página dice {ano}. Para quien entra hoy es la señal de que el negocio "
-            "puede estar cerrado o abandonado, aunque estéis funcionando a pleno rendimiento."
+        observacion=f"el pie de página sigue diciendo {ano}",
+        consecuencia=(
+            "para el que entra hoy es la señal de que el negocio puede estar cerrado, "
+            "aunque estés trabajando a full"
         ),
+        puente="es de las cosas que menos cuestan arreglar y más rápido se notan",
     )
 
 
@@ -469,11 +491,10 @@ def peso_excesivo(res: ProbeResult) -> Finding | None:
         severidad=4,
         peso=4,
         categoria="cosmetico",
-        evidencia=f"{kb / 1024:.1f} MB descargados en una sola visita ({res.metrics.peticiones or 0} peticiones)",
-        argumento=(
-            f"Cada visita descarga {kb / 1024:.1f} MB. Con datos móviles eso son varios segundos de espera "
-            "y una factura de datos que el visitante nota."
-        ),
+        evidencia=f"{_coma(kb / 1024)} MB descargados en una sola visita ({res.metrics.peticiones or 0} peticiones)",
+        observacion=f"cada visita se descarga {_coma(kb / 1024)} MB",
+        consecuencia="con datos móviles eso son varios segundos de espera y un consumo que se nota",
+        puente="comprimir las imágenes baja eso a una fracción sin perder calidad",
     )
 
 
@@ -489,10 +510,9 @@ def imagenes_sin_optimizar(res: ProbeResult) -> Finding | None:
         peso=3,
         categoria="cosmetico",
         evidencia=f"{sobredim} imágenes con más del doble de resolución de la que se muestra",
-        argumento=(
-            "Se están sirviendo fotos de tamaño original y reduciéndolas por CSS. "
-            "Es peso muerto que solo paga el visitante con su espera."
-        ),
+        observacion="se están sirviendo las fotos en tamaño original y achicándolas por CSS",
+        consecuencia="es peso muerto que paga el que entra, con su espera",
+        puente="servirlas al tamaño real es automático y no cambia nada visual",
         zona=_rect(res, "imagenPrincipal"),
     )
 
@@ -509,10 +529,9 @@ def menu_sobrecargado(res: ProbeResult) -> Finding | None:
         peso=3,
         categoria="cosmetico",
         evidencia=f"{items} enlaces en la navegación principal",
-        argumento=(
-            f"El menú ofrece {items} caminos distintos nada más entrar. Cada opción extra reparte la atención "
-            "y aleja al visitante de la única acción que te interesa: que te contacte."
-        ),
+        observacion=f"el menú ofrece {items} caminos distintos apenas entrás",
+        consecuencia="cada opción de más reparte la atención y aleja de la única acción que te interesa: que te escriban",
+        puente="recortar el menú a lo que de verdad usan es gratis y ordena la portada",
         zona=_rect(res, "nav"),
     )
 
@@ -540,10 +559,9 @@ def sin_identidad_seo(res: ProbeResult) -> Finding | None:
         peso=3,
         categoria="cosmetico",
         evidencia="; ".join(fallos),
-        argumento=(
-            "Faltan los elementos básicos que Google usa para entender la página, y al compartir el enlace "
-            "por WhatsApp aparece sin imagen ni descripción: parece un enlace sospechoso."
-        ),
+        observacion="faltan los datos básicos que Google usa para entender la página",
+        consecuencia="al compartir el enlace por WhatsApp aparece sin imagen ni descripción, y se lee como un link sospechoso",
+        puente="son cuatro etiquetas en el HTML, se resuelve de una vez",
     )
 
 
@@ -560,10 +578,9 @@ def accesibilidad_imagenes(res: ProbeResult) -> Finding | None:
         peso=2,
         categoria="cosmetico",
         evidencia=f"{sin_alt} de {total} imágenes sin atributo alt",
-        argumento=(
-            "Las imágenes no tienen descripción: Google no sabe qué muestran y quien usa lector de pantalla "
-            "no puede navegar la web. Además incumple los requisitos de accesibilidad."
-        ),
+        observacion="las imágenes no tienen descripción",
+        consecuencia="Google no sabe qué muestran y quien usa lector de pantalla no puede navegar la web",
+        puente="completar los textos alternativos es mecánico y suma en el buscador",
     )
 
 
@@ -578,10 +595,9 @@ def sin_favicon(res: ProbeResult) -> Finding | None:
         peso=0,
         categoria="cosmetico",
         evidencia="No hay favicon declarado",
-        argumento=(
-            "En la pestaña del navegador tu web aparece con el icono en blanco por defecto: "
-            "un detalle pequeño que resta profesionalidad frente a la competencia."
-        ),
+        observacion="en la pestaña del navegador tu web aparece con el ícono en blanco",
+        consecuencia="es un detalle chico que resta al lado de la competencia",
+        puente="es subir un archivo de 32 píxeles",
     )
 
 
@@ -615,13 +631,27 @@ def evaluar(res: ProbeResult) -> tuple[int, str, list[Finding]]:
     if inaccesible:
         return 95, "inaccesible", hallazgos
 
+    # Ni cargó ni se pudo descartar que sea culpa nuestra: no hay nada medido
+    # que contar, así que no hay prospecto. Score 0 para que el umbral lo
+    # descarte solo, y un veredicto propio para poder reintentarlo después.
+    if not res.ok:
+        return 0, "no_medido", hallazgos
+
     score = min(100, sum(h.peso for h in hallazgos))
     veredicto = next(nombre for umbral, nombre in VEREDICTOS if score >= umbral)
     return score, veredicto, hallazgos
 
 
 def finding_sin_web(nombre: str) -> Finding:
-    """El prospecto ideal: ficha en Maps y ninguna web detrás."""
+    """El prospecto ideal: ficha en Maps y ninguna web detrás.
+
+    Este texto es descriptivo y va al informe HTML y al prompt de la IA, en
+    tercera persona. El mensaje que se le manda al prospecto NO se arma acá:
+    lo arma `compose/` con el vocabulario del rubro ("no encuentra cómo sacar
+    un turno" para una veterinaria, "cómo pedir un presupuesto" para un
+    taller), que es dato que la auditoría no tiene. Es la única redacción
+    duplicada del sistema y es deliberada; cualquier otra hay que unificarla.
+    """
     return Finding(
         rule_id="sin_web",
         titulo="El negocio no tiene web",
@@ -629,11 +659,12 @@ def finding_sin_web(nombre: str) -> Finding:
         peso=100,
         categoria="killer",
         evidencia="Ficha en Google Maps sin sitio web asociado",
-        argumento=(
-            f"{nombre} aparece en Google Maps sin ninguna web enlazada. Quien os busca por el nombre "
-            "encuentra la ficha, no encuentra precios, servicios ni forma de reservar, y termina "
-            "entrando en la web del competidor que sí la tiene."
+        observacion=f"{nombre} aparece en Google Maps sin ninguna web enlazada",
+        consecuencia=(
+            "quien lo busca ve la ficha, no encuentra ni los servicios ni cómo reservar, "
+            "y termina entrando en la del competidor que sí la tiene"
         ),
+        puente="una página de una sola pantalla alcanza para cortar esa fuga",
     )
 
 

@@ -1,46 +1,68 @@
-# 📨 Plantilla Base: Primer Mensaje (El Gancho "Anti-Slop")
+# Plantilla base: primer mensaje
 
-Esta plantilla sirve como base (few-shot prompting) para que el Agente / Script genere correos en frío asimétricos. El objetivo es que parezcan escritos a mano, en 3 minutos, por una persona real, no por un bot masivo.
+Esta plantilla **no** la usa el motor determinista (que arma el texto desde los
+fragmentos de `audit/rules.py` + `compose/lexicon.py`). Sirve solo como
+referencia de estilo para el motor de IA, que se inyecta en el `PROMPT` de
+`compose/writer.py`. Mantenerla alineada con lo que el script realmente
+escribe: si describe otra cosa, empuja a la IA hacia un estilo que el resto del
+sistema ya descartó.
 
-## Directrices Clave
-1. **Sin saludos formales largos:** Evitar "Espero que este correo te encuentre bien".
-2. **Directo al grano:** El primer párrafo revela el problema visual o de conversión.
-3. **Prueba Social/Visual:** Mencionar la captura de pantalla o el análisis adjunto.
-4. **La "Zanahoria" (El MVP):** Ofrecer construir el prototipo de alto impacto solo si responden.
+## Directrices
 
----
-
-## 📌 Variación 1: Fricción en UI (Bajo Esfuerzo)
-
-**Asunto:** tu sitio web / carga móvil en [Nombre del Negocio]
-
-**Cuerpo:**
-Hola [Nombre], 
-
-Estaba buscando servicios en la zona y entré a su web. Noté que [Problema Específico generado por IA: ej. el botón de agendar cita está oculto en la versión móvil / la imagen principal tarda en cargar y rompe la estructura]. Te adjunto una captura de pantalla con el detalle.
-
-Sé que esto les está haciendo perder contactos. Me tomé el atrevimiento de pensar cómo se vería una versión optimizada puramente enfocada en que el cliente contacte más rápido usando estándares modernos.
-
-Me lleva un par de horas armar un prototipo: ¿te sirve si te mando el enlace para que lo veas? Sin compromiso.
-
-Saludos,
-[Tu Nombre]
-[Tu Cargo / Enlace a la Agencia]
+1. **Segunda persona del singular, de punta a punta.** Voseo rioplatense. Nunca
+   abrir en plural ("hola, equipo de X") y seguir en singular ("tu web", "te
+   sirve"): mezclar las dos personas se lee como plantilla mal rellenada.
+2. **La primera línea es el hallazgo medido**, concreto y verificable. Si la
+   frase sirve igual para otro prospecto de la lista, es spam.
+3. **La consecuencia se dice una sola vez.** No repetir la misma idea con otras
+   palabras tres líneas más abajo.
+4. **El puente hacia la oferta sale del hallazgo**, no de una frase fija. Si el
+   problema era la velocidad de carga, no se cierra hablando del botón de
+   contacto.
+5. **Vocabulario del rubro**: "sacar un turno" para una veterinaria, "pedir un
+   presupuesto" para un taller, "consultar por una propiedad" para una
+   inmobiliaria. Nunca "reservar" genérico.
+6. **Sin credenciales académicas.** La autoridad la da el hallazgo medido.
+7. **Un solo pedido**, de bajo compromiso, con plazo concreto.
 
 ---
 
-## 📌 Variación 2: Competitividad (Alta Calidad)
+## Correo · web con hallazgos
 
-**Asunto:** idea de rediseño para [Nombre del Negocio]
+**Asunto:** el botón de contacto
 
 **Cuerpo:**
-Hola [Nombre], 
+Hola, Estudio Salice,
 
-Soy directo: me dedico a optimizar la conversión de negocios en [Nicho]. Vi su sitio web y la oferta es excelente, pero el diseño visual actual no le hace justicia a la calidad de su servicio.
+Llegué a estudiosalice.com buscando estudios jurídicos en Buenos Aires. En Maps
+tienen 4,8 con 154 reseñas: la demanda claramente está. Lo primero que vi fue
+esto: al entrar no hay ningún botón que diga qué hacer, ni turno, ni llamar, ni
+escribir.
 
-Tengo un par de componentes de interfaz que funcionarían perfecto para subir el valor percibido de [Nombre del Negocio] frente a la competencia. 
+Te adjunto la captura con la zona marcada.
 
-Si te parece bien, te armo un mockup en video mostrando cómo quedaría y te lo paso por acá. ¿Te interesa?
+El que entra tiene que ponerse a buscar cómo contactarte, y casi nadie busca.
+Poner un botón visible arriba de todo es lo primero que suelo mover, y se nota
+enseguida. Me toma un par de horas armar un boceto de cómo quedaría esa portada.
 
-Saludos,
-[Tu Nombre]
+¿Te sirve si te lo paso para que lo veas? Sin compromiso.
+
+Felipe
+Diseño y CRO de landing pages
+
+---
+
+## WhatsApp · negocio sin web
+
+Sin asunto, sin firma y sin ningún enlace: el nombre y el número ya están en el
+encabezado del chat, y un link en el primer mensaje de un número no agendado es
+la señal de spam más cara del canal. Menos de 95 palabras.
+
+> Hola, ¿qué tal? Soy Felipe, armo páginas web.
+>
+> Te encontré en Maps buscando centros de fisioterapia en Mendoza: 3,0 con 219
+> reseñas y sin web enlazada. El que sale del traumatólogo con una orden ve la
+> ficha, no encuentra cómo pedir un turno y termina en la del de al lado.
+>
+> Te armo un boceto de una página de una sola pantalla para que lo veas. ¿Te lo
+> paso?

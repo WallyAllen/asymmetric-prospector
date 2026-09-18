@@ -34,17 +34,66 @@ class _Serializable:
 
 @dataclass(slots=True)
 class Finding(_Serializable):
-    """Un defecto concreto detectado, con su munición de venta."""
+    """Un defecto concreto detectado, con su munición de venta.
+
+    La munición viene partida en tres piezas en vez de en un párrafo único.
+    El párrafo único obligaba a `writer.py` a agregar su propia consecuencia
+    genérica detrás (porque no sabía si el argumento ya la traía), y eso
+    producía la misma idea dicha dos veces en el 70% de los mensajes, más un
+    puente hacia la oferta que hablaba siempre de CTA aunque el hallazgo fuera
+    la velocidad de carga. Partido, cada canal arma lo que le entra:
+
+      · observacion   → lo que SE VE, sin consecuencia. Es la primera línea.
+      · consecuencia  → lo que le cuesta, en plata o en clientes. Una sola vez.
+      · puente        → la transición hacia la oferta, propia de ESTE defecto.
+
+    `argumento` se conserva como campo para no romper los JSON ya guardados
+    (y para quien solo quiera el párrafo entero): si no se pasa, se deriva.
+    """
 
     rule_id: str
     titulo: str
     severidad: int          # 1-10, cuánto duele
     peso: int               # puntos que aporta al score de oportunidad
     evidencia: str          # dato duro medido ("LCP 6.2 s", "0 CTA en el fold")
-    argumento: str          # frase lista para el correo, en lenguaje de negocio
+    argumento: str = ""     # observacion + consecuencia, derivado si no se pasa
+    observacion: str = ""   # lo que se ve, sin consecuencia
+    consecuencia: str = ""  # lo que cuesta, dicho una vez
+    puente: str = ""        # transición hacia la oferta, específica del defecto
     viewport: str = "desktop"   # desktop | mobile | ambos
     zona: dict[str, float] | None = None  # rect x,y,width,height para anotar la captura
     categoria: str = "moderado"  # killer | moderado | cosmetico — ver rules.py
+
+    def __post_init__(self) -> None:
+        # Nuevo → viejo: el párrafo se arma solo.
+        if not self.argumento:
+            piezas = []
+            for texto in (self.observacion, self.consecuencia):
+                texto = (texto or "").strip()
+                if not texto:
+                    continue
+                texto = texto[:1].upper() + texto[1:]
+                if not texto.endswith((".", "!", "?")):
+                    texto += "."
+                piezas.append(texto)
+            self.argumento = " ".join(piezas)
+        # Viejo → nuevo: un Finding releído de un JSON anterior solo trae
+        # `argumento`. Se usa entero como observación para que los redactores
+        # nuevos sigan produciendo texto en vez de un hueco.
+        if not self.observacion:
+            self.observacion = self.argumento
+
+    @property
+    def legado(self) -> bool:
+        """True si viene de una auditoría anterior a la partición en tres.
+
+        Importa porque su `observacion` es en realidad el párrafo entero, con
+        la consecuencia adentro: si el redactor le agrega encima su
+        consecuencia de reserva, vuelve a decir lo mismo dos veces, que es
+        justo lo que se estaba arreglando. Un `audit --forzar` lo resuelve de
+        raíz; mientras tanto, el redactor no duplica.
+        """
+        return not self.consecuencia.strip()
 
 
 @dataclass(slots=True)
@@ -71,6 +120,12 @@ class Metrics(_Serializable):
     tiene_formulario: bool | None = None
     tiene_tel: bool | None = None
     tiene_whatsapp: bool | None = None
+    # Números sacados de la propia web. El de WhatsApp es el único verificado
+    # que existe: lo publicó el negocio y por definición está en WhatsApp. El
+    # de Maps es una línea fija el 69% de las veces, y un fijo no se puede
+    # convertir en celular: no existe ese algoritmo.
+    whatsapp_web: str | None = None      # número detrás del enlace wa.me
+    tel_web: str | None = None           # número detrás del primer enlace tel:
     h1: int | None = None
     title: str | None = None
     meta_description: str | None = None
@@ -153,11 +208,22 @@ class Lead(_Serializable):
     nicho: str = ""
     fuente: str = "google_maps"
     tiene_web: bool = True
-    estado: str = "crudo"   # crudo | auditado | descartado | listo | enviado | rebotado
+    # crudo | auditado | descartado | listo | listo_whatsapp | enviado |
+    # enviado_whatsapp | rebotado | respondido | baja  (ver storage._PROGRESO)
+    estado: str = "crudo"
     motivo_descarte: str | None = None
     audit: Audit | None = None
     email_draft: EmailDraft | None = None
     enviado_el: str | None = None
+    # Por qué vía se contactó. Sin esto, correo y WhatsApp comparten el estado
+    # "enviado" y no hay forma de separar dos canales con ritmos, costos y
+    # tasas de respuesta distintas.
+    canal: str | None = None        # email | whatsapp
+    # Quien contestó sale de todas las colas para siempre. Es la garantía más
+    # importante del sistema: escribirle "por si no lo viste" a alguien que ya
+    # te respondió es la delación de robot más cara que existe.
+    respondido_el: str | None = None
+    nota_respuesta: str | None = None
     creado_el: str = field(default_factory=_now)
 
     def __post_init__(self) -> None:

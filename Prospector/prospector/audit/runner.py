@@ -15,6 +15,10 @@ from .capture import anotar, anotar_overflow_movil
 from .signals import ProbeResult, SiteProbe
 from .vision import a_finding, juzgar
 
+# Cada cuántos leads terminados se persiste el avance. 10 es un compromiso:
+# guardar en cada uno reescribe un JSON de 3 MB cientos de veces.
+_CADA = 10
+
 log = get_logger("auditor")
 
 
@@ -59,12 +63,16 @@ def _aplicar_resultado(lead: Lead, res: ProbeResult, cfg: Settings) -> Lead:
     lead.audit = auditoria
     lead.estado = "auditado"
 
-    icono = {"critico": "✖", "inaccesible": "⚠", "mejorable": "•", "sano": "✓"}.get(veredicto, "•")
+    icono = {"critico": "✖", "inaccesible": "⚠", "mejorable": "•", "sano": "✓",
+             "no_medido": "?"}.get(veredicto, "•")
     log.info(
         "%s %s · score %d/100 (%s) → %s",
         icono, lead.etiqueta, score, veredicto, rules.resumen(hallazgos) or "sin defectos relevantes",
     )
-    if score < cfg.audit.min_score:
+    if veredicto == "no_medido":
+        lead.estado = "descartado"
+        lead.motivo_descarte = f"no se pudo medir: {res.error or 'sin detalle'}"
+    elif score < cfg.audit.min_score:
         lead.estado = "descartado"
         lead.motivo_descarte = f"score {score} por debajo del umbral {cfg.audit.min_score}"
     return lead
@@ -180,14 +188,45 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
                 pass
 
 
-async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False) -> list[Lead]:
-    """Audita los leads pendientes. Idempotente: no repite trabajo ya hecho."""
+async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False,
+                  solo_veredicto: str | None = None, reanudar: bool = False,
+                  on_progreso=None) -> list[Lead]:
+    """Audita los leads pendientes. Idempotente: no repite trabajo ya hecho.
+
+    `solo_veredicto` re-mide únicamente los que quedaron con ese veredicto.
+    Sirve para volver sobre los "inaccesible" y los "no_medido" sin rehacer
+    una tanda de una hora: son los dos grupos que un tropiezo de red puede
+    haber marcado mal, y de los que no conviene fiarse sin una segunda mirada.
+
+    `reanudar` retoma una tanda cortada: salta los que ya se midieron en la
+    corrida más reciente y sigue por los que quedaron con auditoría vieja.
+
+    `on_progreso` se llama cada `_CADA` leads terminados. Antes no existía y
+    la función guardaba recién al final: un Ctrl+C a los cuarenta minutos
+    tiraba los cuarenta minutos, y encima el mensaje de salida decía "el
+    progreso quedó guardado", que para esta etapa era falso.
+    """
     from ..utils import is_directory
 
-    pendientes = [
-        lead for lead in leads
-        if forzar or lead.audit is None or lead.estado == "crudo"
-    ]
+    if solo_veredicto:
+        pendientes = [l for l in leads if l.audit and l.audit.veredicto == solo_veredicto]
+        log.info("Re-midiendo %d leads con veredicto «%s»", len(pendientes), solo_veredicto)
+    elif reanudar:
+        # "Ya medido en esta tanda" = su auditoría es del mismo día que la más
+        # nueva del archivo. Lo demás quedó pendiente cuando se cortó.
+        fechas = [l.audit.auditado_el for l in leads if l.audit and l.audit.auditado_el]
+        corte = max(fechas)[:10] if fechas else ""
+        pendientes = [
+            l for l in leads
+            if not (l.audit and (l.audit.auditado_el or "")[:10] == corte)
+        ]
+        log.info("Reanudando: %d ya medidos el %s, quedan %d",
+                 len(leads) - len(pendientes), corte or "?", len(pendientes))
+    else:
+        pendientes = [
+            lead for lead in leads
+            if forzar or lead.audit is None or lead.estado == "crudo"
+        ]
     if not pendientes:
         log.info("No hay leads pendientes de auditar")
         return leads
@@ -213,23 +252,37 @@ async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False) -> lis
 
     log.info("Auditando %d webs (concurrencia %d)", len(con_web), cfg.audit.concurrency)
     semaforo = asyncio.Semaphore(max(1, cfg.audit.concurrency))
-    resultados: dict[str, ProbeResult] = {}
+    terminados = 0
 
-    async with SiteProbe(cfg.audit) as probe:
-        async def tarea(lead: Lead) -> None:
-            async with semaforo:
-                resultados[lead.id] = await probe.probe(lead.url, slug=_slug(lead))
+    async def procesar(lead: Lead, probe: SiteProbe) -> None:
+        """Mide y aplica el resultado de UN lead, sin esperar a los demás.
 
-        await asyncio.gather(*(tarea(lead) for lead in con_web), return_exceptions=True)
-
-    for lead in con_web:
-        res = resultados.get(lead.id)
-        if res is None:
-            lead.estado = "descartado"
-            lead.motivo_descarte = "la auditoría no pudo completarse"
-            continue
+        Antes se esperaba a que terminaran todos y recién ahí se aplicaban los
+        resultados en un segundo bucle. Así, un lead terminado ya queda
+        resuelto en memoria y el guardado periódico lo persiste.
+        """
+        nonlocal terminados
+        async with semaforo:
+            res = await probe.probe(lead.url, slug=_slug(lead))
+        # Un lead que vuelve a medirse sale del descarte si ahora califica.
+        if lead.estado == "descartado" and (solo_veredicto or reanudar):
+            lead.estado = "auditado"
+            lead.motivo_descarte = None
         _aplicar_resultado(lead, res, cfg)
         # El jurado y Pillow son síncronos: se ejecutan fuera del navegador.
         await asyncio.to_thread(_jurado_y_anotacion, lead, res, cfg)
+        terminados += 1
+        if on_progreso and terminados % _CADA == 0:
+            await asyncio.to_thread(on_progreso, leads)
+            log.info("   …%d/%d medidos · guardado", terminados, len(con_web))
 
+    async with SiteProbe(cfg.audit) as probe:
+        try:
+            await asyncio.gather(*(procesar(l, probe) for l in con_web),
+                                 return_exceptions=True)
+        finally:
+            # Ctrl+C incluido: lo medido hasta acá se guarda igual.
+            if on_progreso:
+                await asyncio.to_thread(on_progreso, leads)
+    log.info("Auditoría terminada: %d/%d medidos", terminados, len(con_web))
     return leads

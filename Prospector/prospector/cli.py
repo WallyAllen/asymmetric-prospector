@@ -1,4 +1,4 @@
-"""Punto de entrada único:  python -m prospector <comando>"""
+"""Punto de entrada único:  py -m prospector <comando>"""
 from __future__ import annotations
 
 import argparse
@@ -22,12 +22,14 @@ def _parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Ejemplos:\n"
-            "  python -m prospector mine \"clinicas dentales valencia\"\n"
-            "  python -m prospector audit --limite 10\n"
-            "  python -m prospector compose\n"
-            "  python -m prospector send                # simulación\n"
-            "  python -m prospector send --enviar-de-verdad --limite 5\n"
-            "  python -m prospector run \"fisioterapia sevilla\"\n"
+            "  py -m prospector mine \"clinicas dentales valencia\"\n"
+            "  py -m prospector audit --limite 10\n"
+            "  py -m prospector compose\n"
+            "  py -m prospector send                # simulación\n"
+            "  py -m prospector send --enviar-de-verdad --limite 5\n"
+            "  py -m prospector lint                # calidad de la redacción\n"
+            "  py -m prospector respondio un-dominio.com   # contestó: fuera de la cola\n"
+            "  py -m prospector run \"fisioterapia sevilla\"\n"
         ),
     )
     p.add_argument("--verbose", "-v", action="store_true", help="traza detallada")
@@ -47,6 +49,10 @@ def _parser() -> argparse.ArgumentParser:
     a = sub.add_parser("audit", help="auditar las webs y calificar la oportunidad")
     a.add_argument("--limite", type=int, help="auditar solo los primeros N leads")
     a.add_argument("--forzar", action="store_true", help="reauditar incluso lo ya auditado")
+    a.add_argument("--reanudar", action="store_true",
+                   help="retomar una tanda cortada: saltea lo ya medido hoy")
+    a.add_argument("--solo", metavar="VEREDICTO",
+                   help="re-medir solo los de ese veredicto (p. ej. inaccesible, no_medido)")
     a.add_argument("--sin-ia", action="store_true", help="solo señales objetivas, sin jurado visual")
     a.add_argument("--umbral", type=int, help="score mínimo para no descartar (por defecto 35)")
     a.add_argument("--concurrencia", type=int, help="webs auditadas en paralelo")
@@ -67,6 +73,16 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--limite", type=int)
 
     sub.add_parser("status", help="estado actual del embudo")
+    sub.add_parser("lint", help="auditar la calidad de la redacción del corpus")
+    rp = sub.add_parser("respondio", help="marcar que un lead contestó: sale de toda cola")
+    rp.add_argument("clave", help="id, dominio, email o teléfono del lead")
+    rp.add_argument("--nota", default="", help="qué dijo, para acordarte después")
+    rp.add_argument("--baja", action="store_true",
+                    help="no le interesa: además lo suprime en los dos canales")
+    rw = sub.add_parser("recuperar-whatsapp",
+                        help="dar de alta en el registro los envíos de WhatsApp sin rastro")
+    rw.add_argument("--aplicar", action="store_true", help="escribir los cambios (por defecto simula)")
+    rw.add_argument("--fecha", help="día real de esos envíos, AAAA-MM-DD (si no, queda sin fecha)")
     i = sub.add_parser("report", help="generar el informe HTML")
     i.add_argument("--minimo", type=int, default=0, help="score mínimo a incluir")
     return p
@@ -126,7 +142,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.comando == "enrich":
             pipeline.enriquecer_contactos(cfg)
         elif args.comando == "audit":
-            pipeline.auditar_leads(cfg, forzar=args.forzar, limite=args.limite)
+            pipeline.auditar_leads(cfg, forzar=args.forzar, limite=args.limite,
+                                   solo_veredicto=args.solo, reanudar=args.reanudar)
         elif args.comando == "compose":
             pipeline.redactar_correos(cfg, forzar=args.forzar)
         elif args.comando == "send":
@@ -136,10 +153,21 @@ def main(argv: list[str] | None = None) -> int:
                                    simular=not args.enviar_de_verdad, limite_envio=args.limite)
         elif args.comando == "status":
             _estado()
+        elif args.comando == "respondio":
+            from . import respuestas
+            if respuestas.marcar(args.clave, nota=args.nota, baja=args.baja) is None:
+                return 1
+        elif args.comando == "lint":
+            from . import lint
+            lint.imprimir()
+        elif args.comando == "recuperar-whatsapp":
+            from . import migrate
+            migrate.recuperar_whatsapp(simular=not args.aplicar, fecha=args.fecha)
         elif args.comando == "report":
             report.generar(minimo=args.minimo)
     except KeyboardInterrupt:
-        log.warning("Interrumpido. El progreso quedó guardado; puedes retomar donde ibas.")
+        log.warning("Interrumpido. Lo ya medido quedó guardado: "
+                    "retomá con `py -m prospector audit --reanudar`.")
         return 130
     return 0
 

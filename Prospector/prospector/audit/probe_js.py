@@ -176,6 +176,15 @@ AUDIT_JS = r"""
     telLinks: document.querySelectorAll('a[href^="tel:"]').length,
     mailtoLinks: document.querySelectorAll('a[href^="mailto:"]').length,
     whatsapp: document.querySelectorAll('a[href*="wa.me"],a[href*="api.whatsapp"],a[href*="whatsapp.com/send"]').length,
+    // El href, no solo la cuenta. Un enlace de WhatsApp puesto por el propio
+    // negocio en su web es el único número del que se sabe con certeza que
+    // está en WhatsApp: el de Maps es fijo dos de cada tres veces y no hay
+    // forma de deducir el celular a partir de una línea.
+    whatsappHrefs: Array.from(document.querySelectorAll(
+        'a[href*="wa.me"],a[href*="api.whatsapp"],a[href*="whatsapp.com/send"]'
+      )).map(a => a.href).slice(0, 5),
+    telHrefs: Array.from(document.querySelectorAll('a[href^="tel:"]'))
+      .map(a => a.href.replace(/^tel:/, '').replace(/\s/g, '')).slice(0, 5),
     ctasEnFold: foldCtas.length,
     ctas: foldCtas.slice(0, 5),
     palabrasEnFold: foldWords,

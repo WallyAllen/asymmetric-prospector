@@ -95,7 +95,30 @@ def save_leads(path: Path, leads: Iterable[Lead]) -> None:
 # Cuánto ha avanzado un lead en el embudo: sirve para decidir, al fusionar,
 # de qué lado viene el trabajo más "hecho" (nunca se pisa lo más avanzado con
 # lo menos avanzado, venga del lado que venga).
-_PROGRESO = {"crudo": 0, "descartado": 1, "auditado": 2, "listo": 3, "enviado": 4, "rebotado": 4}
+#
+# ⚠ Los estados de WhatsApp FALTABAN acá, y `.get(estado, 0)` los valoraba en 0
+# —menos avanzado que "crudo"—. Como `pipeline.redactar_correos()` hace
+# `merge_leads(composed, audited)`, en CADA `compose` el lead retrocedía de
+# `listo_whatsapp` a `auditado`; después `redactar_whatsapp()` no lo recuperaba
+# (ya tenía borrador) y `exportar_whatsapp()` lo excluía y le borraba el .txt.
+# 86 leads con mensaje escrito y score medio 96/100 quedaron fuera de la cola
+# sin una sola línea de log. Cualquier estado nuevo va acá el mismo día.
+_PROGRESO = {
+    "crudo": 0,
+    "descartado": 1,
+    "auditado": 2,
+    "listo": 3,
+    "listo_whatsapp": 3,
+    "enviado": 4,
+    "enviado_whatsapp": 4,
+    "rebotado": 4,
+    # Terminales: por encima de todo, para que ninguna fusión los pise. Un
+    # `compose` que devolviera a "auditado" a alguien que contestó lo pondría
+    # de vuelta en la cola, y esa es la única falla del sistema que no tiene
+    # arreglo después de pasar.
+    "respondido": 9,
+    "baja": 9,
+}
 
 
 def merge_leads(existing: Iterable[Lead], nuevos: Iterable[Lead]) -> list[Lead]:
@@ -115,7 +138,7 @@ def merge_leads(existing: Iterable[Lead], nuevos: Iterable[Lead]) -> list[Lead]:
             continue
 
         for campo in ("nombre", "url", "telefono", "direccion", "categoria", "rating",
-                      "resenas", "nicho", "email"):
+                      "resenas", "nicho", "email", "canal"):
             valor = getattr(nuevo, campo)
             if valor and not getattr(actual, campo):
                 setattr(actual, campo, valor)
@@ -138,6 +161,8 @@ def merge_leads(existing: Iterable[Lead], nuevos: Iterable[Lead]) -> list[Lead]:
             actual.email_draft = nuevo.email_draft
         if not actual.enviado_el and nuevo.enviado_el:
             actual.enviado_el = nuevo.enviado_el
+        if not actual.respondido_el and nuevo.respondido_el:
+            actual.respondido_el = nuevo.respondido_el
 
         if _PROGRESO.get(nuevo.estado, 0) > _PROGRESO.get(actual.estado, 0):
             actual.estado = nuevo.estado

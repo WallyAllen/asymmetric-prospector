@@ -37,7 +37,7 @@ El lead aparece en Maps y nada más. Hoy es cerca de la mitad de los leads.
 
 - **Prohibido** hablar de "tu web", "tu portada", "tu sitio", de velocidad, de mobile o de cualquier hallazgo técnico. No hay web que auditar.
 - La apertura se ancla en la ficha de Maps. Si hay rating y reseñas, se citan como dato suyo: prueban que la demanda ya existe y que el problema es solo que no hay dónde aterrizarla.
-- El problema de negocio es concreto: quien los encuentra en Maps no ve servicios, ni precios, ni forma de reservar, y termina abriendo la ficha del siguiente.
+- El problema de negocio es concreto: quien los encuentra en Maps no ve las especialidades, ni las instalaciones, ni forma de reservar, y termina abriendo la ficha del siguiente.
 - La oferta es una página de una sola pantalla, no un rediseño.
 - **Nunca hay adjunto.** Ninguna frase puede prometer uno.
 
