@@ -164,3 +164,39 @@ python -m unittest discover -s tests -v
 Cubren normalización de URLs, filtrado de directorios, limpieza de emails, el motor
 de reglas completo (web sana / web pésima / sitio caído), el filtro anti-slop, la
 anotación de capturas y la construcción del correo MIME.
+
+## Este repositorio es público — lo que no se publica
+
+El código es abierto a propósito: es más útil mirado que escondido, y lo que
+diferencia una prospección de un spam no es el script, es el criterio con el que
+se elige y se escribe.
+
+Los **datos** son otra cosa. Nadie de los que aparecen en `data/` pidió estar
+ahí: son negocios reales con su nombre, su teléfono, su mail y los defectos de
+su web. Eso no se publica, ni siquiera "para mostrar cómo funciona".
+
+Fuera del repositorio, por `.gitignore`:
+
+```
+data/01_raw/  02_audited/  03_composed/  04_sent/  05_whatsapp/  screenshots/
+.env
+```
+
+Y hay un hook que corta el commit si algo de eso se cuela igual (por un
+`git add -f`, por una regla mal editada, o por una clave de API pegada a mano).
+Instalalo una vez por clon:
+
+```bash
+git config core.hooksPath Prospector/scripts/hooks
+```
+
+Si alguna vez tiene que entrar algo bloqueado, `git commit --no-verify` — pero
+pensalo dos veces: en un repositorio público no hay marcha atrás, borrarlo
+después no lo saca de los commits viejos.
+
+Los ejemplos de `templates/primer_mensaje.md` son ficticios. Los informes que
+vienen versionados usan datos de prueba, no leads reales.
+
+## Licencia
+
+MIT — ver [`LICENSE`](../LICENSE).

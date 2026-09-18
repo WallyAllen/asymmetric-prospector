@@ -29,12 +29,17 @@ sistema ya descartó.
 
 ## Correo · web con hallazgos
 
+> Los dos ejemplos de abajo son ficticios: el negocio, el dominio y los números
+> están inventados. Sirven para mostrar el registro y la estructura, no para
+> copiarlos tal cual — si la primera línea sirve igual para otro prospecto de la
+> lista, es spam.
+
 **Asunto:** el botón de contacto
 
 **Cuerpo:**
-Hola, Estudio Salice,
+Hola, Estudio Aguirre,
 
-Llegué a estudiosalice.com buscando estudios jurídicos en Buenos Aires. En Maps
+Llegué a estudioaguirre.example buscando estudios jurídicos en Buenos Aires. En Maps
 tienen 4,8 con 154 reseñas: la demanda claramente está. Lo primero que vi fue
 esto: al entrar no hay ningún botón que diga qué hacer, ni turno, ni llamar, ni
 escribir.

@@ -1,0 +1,47 @@
+#!/bin/sh
+# Prospector · guardia de datos
+#
+# Este repositorio es publico. Los datos de prospeccion (nombres, telefonos,
+# mails y webs de negocios reales que nunca pidieron aparecer aca) no lo son.
+# El .gitignore ya los cubre, pero un "git add -f" o una regla mal editada
+# alcanzan para publicarlos, y un repo publico no tiene marcha atras.
+#
+# Este hook corta el commit antes de que eso pase.
+#
+# Instalar:   git config core.hooksPath Prospector/scripts/hooks
+# Saltear:    git commit --no-verify   (sabiendo lo que se hace)
+
+archivos=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$archivos" ] && exit 0
+
+bloqueados=""
+for f in $archivos; do
+  case "$f" in
+    # datos crudos del embudo (los .gitkeep si pueden)
+    */data/0*/*.json|*/data/0*/*.csv|*/data/0*/*.txt) bloqueados="$bloqueados\n  $f" ;;
+    */data/05_whatsapp/*)                              bloqueados="$bloqueados\n  $f" ;;
+    */data/screenshots/*|*/data/logs/*)                bloqueados="$bloqueados\n  $f" ;;
+    # secretos
+    .env|*/.env|*/.env.local|*/.env.production)        bloqueados="$bloqueados\n  $f" ;;
+    # documentos internos de negocio
+    */PLAYBOOK_*.md|*/PLAN_OUTREACH*.md|business_system_report.md)
+                                                       bloqueados="$bloqueados\n  $f" ;;
+  esac
+done
+
+if [ -n "$bloqueados" ]; then
+  printf '\n  COMMIT BLOQUEADO — esto no va a un repositorio publico:\n'
+  printf "$bloqueados\n"
+  printf '\n  Sacalos del commit con:  git restore --staged <archivo>\n'
+  printf '  Si de verdad tiene que entrar:  git commit --no-verify\n\n'
+  exit 1
+fi
+
+# clave de API pegada a mano en cualquier archivo que entre
+if git diff --cached -U0 | grep -nE '^\+.*(AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[0-9A-Za-z-]{10,})' >/dev/null 2>&1; then
+  printf '\n  COMMIT BLOQUEADO — parece haber una clave de API en el diff.\n'
+  printf '  Revisala, movela al .env y volve a intentar.\n\n'
+  exit 1
+fi
+
+exit 0
