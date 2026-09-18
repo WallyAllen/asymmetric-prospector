@@ -1,7 +1,16 @@
+# ============================================================
+# Repo raiz del workspace = SOLO Prospector.
+# Landing/ y clientes/ son repositorios independientes: git
+# no debe mirarlos desde aca (ver ESTRUCTURA.md).
+# ============================================================
+/Landing/
+/clientes/
+
 # Entornos virtuales y secretos
 venv/
 env/
 .env
+.env.*
 __pycache__/
 *.pyc
 
@@ -9,12 +18,31 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Datos sensibles generados por los scripts (Privacidad de los leads)
+# Datos sensibles generados por los scripts (privacidad de los leads)
 Prospector/data/01_raw/*.json
 Prospector/data/02_audited/*.json
 Prospector/data/03_composed/*.json
 Prospector/data/04_sent/*.json
+Prospector/data/05_whatsapp/
 Prospector/data/screenshots/*.png
 
-# Playwright y Scrapling caches locales (si las hubiera)
+# ------------------------------------------------------------
+# Documentos internos de negocio: NO se publican.
+# Este repo es publico en GitHub. Nada de esto sale de la maquina.
+# ------------------------------------------------------------
+business_system_report.md
+Prospector/PLAYBOOK_CIERRE.md
+Prospector/PLAN_OUTREACH_V3.md
+Prospector/INFORME_REDACCION.md
+Prospector/INFORME_REDACCION_WHATSAPP.md
+Prospector/INFORME_CLINICAS_LA_PLATA.html
+Prospector/Claude outputs/
+Prospector/corey_skill.md
+Prospector/tfy_skill.md
+
+# Configuracion local de agentes
+.claude/settings.local.json
+Prospector/.claude/settings.local.json
+
+# Playwright y Scrapling caches locales
 .playwright/

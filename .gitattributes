@@ -1,0 +1,7 @@
+# En el repo siempre LF, sin importar el editor de Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
