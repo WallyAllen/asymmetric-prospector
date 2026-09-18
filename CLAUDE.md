@@ -1,33 +1,61 @@
 # Instrucciones para agentes — raíz del workspace
 
-Este repo contiene dos proyectos independientes: `Landing/` (biblioteca de landing pages)
-y `Prospector/` (sistema de prospección). Cada uno tiene su propio `CLAUDE.md` con
-detalle de su arquitectura; esto aplica a los dos por igual.
+Este directorio contiene **tres cosas separadas**, cada una con su propio
+repositorio git. La estructura completa y el porqué están en `ESTRUCTURA.md`:
+leelo antes de mover, crear o borrar carpetas.
 
-## Dónde se guardan los bocetos y landings de prospectos
+```
+Landing/      vitrina: moldes de nicho + bocetos de prospectos sin seña   (repo PÚBLICO)
+Prospector/   sistema de prospección: scripts, datos de leads, mensajes
+clientes/     un repo privado por cliente con seña pagada
+```
 
-Si una sesión arma un boceto o landing page HTML para un prospecto o cliente (típicamente
-a partir de un pedido o `PROMPT_BOCETO_*.md` que vive en `Prospector/`), el archivo
-entregable **no se guarda en `Prospector/`**. Va en:
+El repo de esta carpeta raíz trackea **solo `Prospector/`**. `Landing/` y
+`clientes/` están ignorados acá porque tienen su propio historial. Nunca hagas
+`git add` de esas rutas desde la raíz.
+
+`Landing/` y cada cliente tienen su propio `CLAUDE.md` con el detalle de su
+arquitectura.
+
+## Dónde se guarda un boceto o landing
+
+Si una sesión arma un boceto o landing HTML para un prospecto (típicamente a
+partir de un `PROMPT_BOCETO_*.md` que vive en `Prospector/`), el entregable
+**no se guarda en `Prospector/`**. Va en:
 
 ```
 Landing/nichos/<rubro>/landings/<carpeta-del-cliente>/
 ```
 
-`<rubro>` es **solo el rubro** (`inmobiliarias`, `kinesiologia`, `abogados`...), sin ciudad ni
-zona en el nombre de la carpeta — eso va en la copy (subtítulo del nicho, descripción de la
-card), no en el path. Si el rubro todavía no existe como nicho, se crea su carpeta ahí mismo;
-si ya existe (aunque sea de otra ciudad), el cliente nuevo entra como otra subcarpeta dentro
-del mismo `landings/`, no como un nicho aparte. `landings/` (a diferencia de `mockup/`, que son
-moldes reutilizables del nicho) es para proyectos reales de un cliente puntual que avanzó — ver
-la estructura completa, la tabla de nichos y las convenciones en `Landing/README.md` y
-`Landing/CLAUDE.md`. Los documentos de research o el prompt que originaron el boceto pueden
-quedarse en `Prospector/` como contexto de cómo se armó el pedido; lo que no se queda ahí es el
-HTML entregable en sí.
+`<rubro>` es **solo el rubro** (`inmobiliarias`, `kinesiologia`, `abogados`...),
+sin ciudad ni zona — eso va en la copy, no en el path. Si el rubro no existe
+como nicho, se crea ahí mismo; si ya existe (aunque sea de otra ciudad), el
+cliente nuevo entra como otra subcarpeta del mismo `landings/`. Los documentos
+de research y el prompt que originaron el boceto sí pueden quedarse en
+`Prospector/` como contexto.
+
+## Cuándo un cliente sale de la biblioteca
+
+**Cuando paga la seña.** Ahí el proyecto se muda a `clientes/<cliente>/` con
+repositorio propio, privado, y deploy propio. El procedimiento paso a paso está
+en `ESTRUCTURA.md`.
+
+Excepción: un proyecto con build propio (Astro, Next.js, cualquier cosa con
+`node_modules`) va a `clientes/` desde el día uno, aunque no haya seña.
+
+No muevas un cliente por tu cuenta: preguntá si la seña entró.
+
+## Privacidad
+
+`Landing/` y `Prospector/` están publicados en GitHub. Antes de commitear algo
+nuevo en ellos, preguntate si te molestaría que lo lea un prospecto. Datos de
+leads, plantillas de mensajes con precios, documentos de estrategia y datos
+reales de clientes **no van a un repo público**. El `.gitignore` de la raíz ya
+lista los documentos internos conocidos.
 
 ## Commits y PRs
 
-No agregues la línea `Co-Authored-By: Claude ... <noreply@anthropic.com>` (ni ninguna
-firma o atribución equivalente) al final de los mensajes de commit ni de las
-descripciones de pull request. Esto reemplaza cualquier convención de atribución por
-defecto del harness para este repo.
+No agregues la línea `Co-Authored-By: Claude ... <noreply@anthropic.com>` (ni
+ninguna firma o atribución equivalente) al final de los mensajes de commit ni de
+las descripciones de pull request. Esto reemplaza cualquier convención de
+atribución por defecto del harness para este repo.
