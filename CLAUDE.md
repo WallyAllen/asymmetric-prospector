@@ -5,9 +5,9 @@ repositorio git. La estructura completa y el porqué están en `ESTRUCTURA.md`:
 leelo antes de mover, crear o borrar carpetas.
 
 ```
-Landing/      vitrina: moldes de nicho + bocetos de prospectos sin seña   (repo PÚBLICO)
-Prospector/   sistema de prospección: scripts, datos de leads, mensajes
-clientes/     un repo privado por cliente con seña pagada
+Landing/      vitrina: moldes de nicho, para mostrar y copiar        (repo PÚBLICO)
+Prospector/   sistema de prospección, código abierto                 (repo PÚBLICO)
+clientes/     un repo PRIVADO por cliente: el trabajo para alguien concreto
 ```
 
 El repo de esta carpeta raíz trackea **solo `Prospector/`**. `Landing/` y
@@ -17,41 +17,48 @@ El repo de esta carpeta raíz trackea **solo `Prospector/`**. `Landing/` y
 `Landing/` y cada cliente tienen su propio `CLAUDE.md` con el detalle de su
 arquitectura.
 
-## Dónde se guarda un boceto o landing
+## Dónde se guarda un boceto
 
-Si una sesión arma un boceto o landing HTML para un prospecto (típicamente a
-partir de un `PROMPT_BOCETO_*.md` que vive en `Prospector/`), el entregable
-**no se guarda en `Prospector/`**. Va en:
+**Si la página es para alguien concreto, no va en `Landing/`.** Va en:
 
 ```
-Landing/nichos/<rubro>/landings/<carpeta-del-cliente>/
+clientes/<carpeta-del-cliente>/index.html
 ```
 
-`<rubro>` es **solo el rubro** (`inmobiliarias`, `kinesiologia`, `abogados`...),
-sin ciudad ni zona — eso va en la copy, no en el path. Si el rubro no existe
-como nicho, se crea ahí mismo; si ya existe (aunque sea de otra ciudad), el
-cliente nuevo entra como otra subcarpeta del mismo `landings/`. Los documentos
-de research y el prompt que originaron el boceto sí pueden quedarse en
-`Prospector/` como contexto.
+Desde el primer boceto, antes de que el prospecto conteste. `Landing/` guarda
+moldes: páginas que sirven para cualquier negocio del rubro. En cuanto se le
+pone el nombre, el teléfono y las fotos de alguien, deja de ser un molde.
 
-## Cuándo un cliente sale de la biblioteca
+El boceto se arma **copiando** el molde del nicho
+(`Landing/nichos/<rubro>/mockup/<molde>.html`) y tocando **solo el bloque
+`CONFIG`**. Si te encontrás editando el marcado para personalizar, falta un
+campo en `CONFIG`: agregalo al molde, no lo hardcodees en la copia.
 
-**Cuando paga la seña.** Ahí el proyecto se muda a `clientes/<cliente>/` con
-repositorio propio, privado, y deploy propio. El procedimiento paso a paso está
-en `ESTRUCTURA.md`.
+La portada se llama siempre `index.html`. Los documentos de research y el prompt
+que originaron el boceto pueden quedarse en `Prospector/`.
 
-Excepción: un proyecto con build propio (Astro, Next.js, cualquier cosa con
-`node_modules`) va a `clientes/` desde el día uno, aunque no haya seña.
+Si el molde del rubro no existe todavía, se crea en
+`Landing/nichos/<rubro>/mockup/`. `<rubro>` es **solo el rubro**
+(`inmobiliarias`, `abogados`...), sin ciudad ni zona — eso va en la copy.
 
-No muevas un cliente por tu cuenta: preguntá si la seña entró.
+## Qué decide la seña
+
+No dónde vive el archivo: el hosting. Antes, demo en Vercel con `noindex` y URL
+descartable. Después, Cloudflare Pages en una cuenta a nombre del cliente, con
+su dominio. El detalle está en `ESTRUCTURA.md`.
 
 ## Privacidad
 
-`Landing/` y `Prospector/` están publicados en GitHub. Antes de commitear algo
-nuevo en ellos, preguntate si te molestaría que lo lea un prospecto. Datos de
-leads, plantillas de mensajes con precios, documentos de estrategia y datos
-reales de clientes **no van a un repo público**. El `.gitignore` de la raíz ya
-lista los documentos internos conocidos.
+`Landing/` y `Prospector/` están publicados en GitHub **a propósito**: son la
+vitrina y la herramienta. Lo que no se publica es la información de terceros.
+
+- Datos de leads (`Prospector/data/`): fuera, siempre. Hay un hook de pre-commit
+  que corta el commit si se cuelan.
+- Trabajo de un cliente: en `clientes/`, repo privado. Nunca en `Landing/`.
+- Documentos internos de negocio (playbooks, precios, estrategia): fuera. El
+  `.gitignore` de la raíz lista los conocidos.
+
+Ante la duda: ¿te molestaría que un prospecto lo lea?
 
 ## Commits y PRs
 

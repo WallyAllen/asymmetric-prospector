@@ -7,118 +7,101 @@
 
 ```
 .LandingPage/
-├── Landing/      repo: Landing-Page-Mockup   · PÚBLICO  · la vitrina
-├── Prospector/   repo: asymmetric-prospector · la máquina de prospección
-└── clientes/     una carpeta y un repo por cliente · PRIVADOS
+├── Landing/      repo Landing-Page-Mockup    · PÚBLICO  · la vitrina: moldes de nicho
+├── Prospector/   repo asymmetric-prospector  · PÚBLICO  · la herramienta, código abierto
+└── clientes/     un repo PRIVADO por cliente · el trabajo hecho para alguien concreto
     ├── monte-propiedades/
-    └── libra-propiedades/
+    ├── libra-propiedades/
+    └── portillo-kus/
 ```
 
-Tres cosas distintas que antes estaban mezcladas:
+El repositorio de la raíz trackea **solo `Prospector/`**. `Landing/` y
+`clientes/` están en su `.gitignore`: cada uno maneja su historial.
 
-| Carpeta | Qué es | Quién la mira |
+## La regla, en una línea
+
+**Si la página es para alguien concreto, no vive en la vitrina.**
+
+| | Qué hay | Quién lo ve |
 |---|---|---|
-| `Landing/` | Moldes de nicho + bocetos de prospectos que todavía no pagaron | Vos, y prospectos a los que les mandás un link |
-| `Prospector/` | Scripts, datos de leads, plantillas de mensajes | Solo vos |
-| `clientes/` | Trabajo pago. Un repositorio por cliente | Vos y el cliente |
+| `Landing/` | Moldes de nicho: el `veterinaria-aurora.html` que sirve para cualquier veterinaria | Cualquiera. Es el catálogo |
+| `clientes/<cliente>/` | Su sitio, con su nombre, sus teléfonos, sus propiedades | Vos y el cliente |
+| `Prospector/` | El código del sistema de prospección | Cualquiera. Los **datos** no salen (ver abajo) |
 
-El repositorio de `.LandingPage/` (la raíz) trackea **solo `Prospector/`**.
-`Landing/` y `clientes/` están en su `.gitignore`: cada uno maneja su historial.
+Un boceto entra en `clientes/` **desde el primer día**, antes de que el
+prospecto conteste siquiera. No hace falta esperar a la seña: `git init` es
+gratis, y lo que cuesta caro es lo otro — que el nombre, el teléfono y la
+dirección de alguien que todavía no es cliente queden publicados en un repo que
+existe para ser mirado.
 
-## La regla de corte: la seña
+### Por qué la vitrina es pública y el trabajo no
 
-**Antes de la seña**, un boceto vive en la biblioteca:
+`Landing/` es pública porque **ese es el punto**: un prospecto que ve seis
+nichos resueltos compra distinto que uno que ve un archivo suelto. `Prospector/`
+es público porque el código es más útil mirado que escondido, y porque lo que
+separa una prospección de un spam no es el script, es el criterio.
 
-```
-Landing/nichos/<rubro>/landings/<cliente>/
-```
+Lo que no es tuyo para publicar es la información de terceros: los negocios de
+`data/`, que nunca pidieron aparecer, y los clientes, que te dieron sus datos
+para hacerles una web, no para tenerlos en un repositorio abierto.
 
-Es barato, descartable y no cuesta nada armarlo. De cada diez bocetos, la
-mayoría no cierra: no tiene sentido montar repositorio y hosting para cada uno.
+### Qué decide entonces la seña
 
-**Cuando entra la seña**, el proyecto se gradúa:
+No dónde vive el archivo: **el hosting**.
 
-```
-clientes/<cliente>/     ← repositorio propio, privado, deploy propio
-```
+| | Antes de la seña | Después |
+|---|---|---|
+| Dónde | Vercel, plan gratis | Cloudflare Pages, plan gratis |
+| URL | `<algo>.vercel.app`, descartable | El dominio del cliente |
+| Indexación | `noindex` siempre | Indexable |
+| Cuenta | Tuya | A nombre del cliente, administrada por vos |
 
-### Por qué se muda (y no se queda todo en la biblioteca)
+Vercel Hobby **no permite uso comercial**: sirve para mostrar un boceto, no para
+producción. Para servir un dominio sin `www` en Pages, los nameservers tienen
+que estar en Cloudflare.
 
-1. **La URL.** En la biblioteca, el cliente recibe
-   `…/nichos/inmobiliarias/landings/monte-propiedades/monte-portada.html`:
-   larga, con la taxonomía interna a la vista, y terminada en `.html`.
-   Con repo propio es `monte-propiedades.pages.dev/`, y el día que se conecta
-   el dominio del cliente no hay que mover nada — se apunta el dominio al mismo
-   proyecto y la URL pasa a ser `montepropiedades.com.ar/`.
-
-2. **Es un entregable.** Un repositorio propio se transfiere, se le da acceso
-   al cliente, y el historial de commits se lee como el registro del trabajo
-   hecho. Mezclado con 12 mockups de otros rubros, no.
-
-3. **Privacidad.** `Landing/` es público. Los teléfonos, direcciones y
-   propiedades reales de un cliente que paga no van ahí.
-
-4. **El deploy no arrastra la galería.** Cada cliente publica solo lo suyo.
-
-5. **Aísla el riesgo.** Romper la vitrina no rompe el sitio de un cliente que
-   ya pagó, y al revés.
-
-### Por qué no se hace repo propio desde el primer boceto
-
-Porque el 80% de los bocetos no cierra, y cada repo nuevo son minutos de setup
-más un proyecto de hosting más una URL que después hay que dar de baja. Y
-porque la galería (`Landing/index.html`) **es el argumento de venta**: un
-prospecto que ve seis nichos resueltos compra distinto que uno que ve un
-archivo suelto.
-
-### La excepción técnica
-
-Un proyecto que **no sea un HTML autocontenido** — Astro, Next.js, cualquier
-cosa con `node_modules` y build propio — va a `clientes/` desde el día uno,
-aunque no haya seña. `Landing/` es una biblioteca de archivos únicos; meter un
-`node_modules` adentro rompe el deploy estático y hace lento hasta un `find`.
-Libra Propiedades está en `clientes/` por esto, no por la seña.
-
-## Cómo graduar un cliente
-
-Desde `.LandingPage/`, con `<cliente>` el nombre de la carpeta:
+## Armar un boceto nuevo
 
 ```bash
-# 1. Mover (instantáneo: es el mismo disco)
-mv Landing/nichos/<rubro>/landings/<cliente> clientes/<cliente>
+# 1. Copiar el molde del nicho
+mkdir clientes/<cliente>
+cp Landing/nichos/<rubro>/mockup/<molde>.html clientes/<cliente>/index.html
 
-# 2. La portada tiene que llamarse index.html, para que la URL no termine en .html
-cd clientes/<cliente> && mv <lo-que-sea>.html index.html
+# 2. Personalizar: se toca SOLO el bloque CONFIG del archivo.
+#    Si te encontrás editando el marcado, falta un campo en CONFIG:
+#    agregalo al molde, no lo hardcodees en la copia.
 
 # 3. Repositorio propio
-git init -b main && git add -A && git commit -m "Sitio de <Cliente>"
+cd clientes/<cliente>
+git init -b main && git add -A && git commit -m "Boceto de <Cliente>"
 
-# 4. Crear el repo PRIVADO en GitHub y publicar
-#    gh repo create <cliente> --private --source=. --push
-
-# 5. En Landing: registrar la baja y sacar la card si la tenía
-cd ../../Landing && git add -A && git commit -m "refactor: <cliente> pasa a clientes/"
+# 4. Remoto PRIVADO
+gh repo create <cliente> --private --source=. --push
 ```
 
-Y en `Landing/index.html`: la card del cliente vuelve **recién cuando el sitio
-está publicado** y el cliente aceptó que se muestre, apuntando a su URL real.
-Nunca a un archivo de este repositorio.
+La portada se llama **`index.html`**, siempre: así la URL termina en `/` y no en
+un nombre de archivo.
 
-## Hosting
+## Cuándo aparece un cliente en la galería
 
-- **Boceto / demo:** Vercel, gratis, con `noindex` puesto. La URL es descartable.
-- **Producción:** Cloudflare Pages en una cuenta a nombre del cliente,
-  administrada por vos. El plan gratis permite uso comercial; Vercel Hobby no.
-- **Dominio:** la cuenta va a nombre del cliente. Para un dominio sin `www` en
-  Pages, los nameservers tienen que estar en Cloudflare.
+Cuando su sitio **ya está publicado** y el cliente aceptó que se muestre. La
+card apunta a su URL real, nunca a un archivo del repositorio. Un boceto en
+curso no se linkea.
+
+Los contadores de la galería (`Landing/index.html`) se calculan solos contando
+las cards: no hay números que actualizar a mano.
 
 ## Convenciones que no cambian
 
 - El nombre de la carpeta de nicho es **solo el rubro** (`inmobiliarias`,
   `abogados`), sin ciudad. La ciudad va en la copy.
-- Un mockup de nicho es **un solo archivo HTML** autocontenido, salvo las
-  excepciones Astro ya documentadas en `Landing/README.md`.
+- Un molde de nicho es **un solo archivo HTML** autocontenido, salvo las
+  excepciones Astro documentadas en `Landing/README.md`. Un proyecto con build
+  propio (Astro, Next.js, un generador en Python) nunca va a la vitrina.
 - Las imágenes van como archivos en una carpeta al lado, **nunca embebidas en
   base64**. Un HTML de 60 KB con doce JPG sueltos carga mejor y versiona mejor
   que un HTML de 3 MB.
-- Fin de línea LF en los tres repos, fijado por `.gitattributes`.
+- Fin de línea LF en todos los repos, fijado por `.gitattributes`.
+- En `Prospector/`, el hook de pre-commit corta cualquier commit que se lleve
+  datos de leads o un `.env`. Se activa una vez por clon:
+  `git config core.hooksPath Prospector/scripts/hooks`.
