@@ -22,3 +22,6 @@ data/screenshots/*
 data/logs/*
 data/informe.html
 !data/**/.gitkeep
+
+# Documentos de clientes: no van en un repo publico
+Claude outputs/

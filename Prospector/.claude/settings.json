@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(/scripts/venv/**)",
+      "Read(/**/__pycache__/**)",
+      "Read(/.env)",
+      "Read(/.env.local)",
+      "Read(/.env.*.local)",
+      "Bash(py -m prospector send --enviar-de-verdad *)",
+      "Bash(python -m prospector send --enviar-de-verdad *)"
+    ],
+    "allow": [
+      "Bash(py -m prospector status)",
+      "Bash(py -m prospector lint)",
+      "Bash(py -m prospector report *)",
+      "Bash(python -m prospector status)",
+      "Bash(python -m prospector lint)",
+      "Bash(pytest *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(rg *)"
+    ]
+  }
+}

@@ -1,33 +1,69 @@
 # Instrucciones para agentes — raíz del workspace
 
-Este repo contiene dos proyectos independientes: `Landing/` (biblioteca de landing pages)
-y `Prospector/` (sistema de prospección). Cada uno tiene su propio `AGENTS.md` con
-detalle de su arquitectura; esto aplica a los dos por igual.
-
-## Dónde se guardan los bocetos y landings de prospectos
-
-Si una sesión arma un boceto o landing page HTML para un prospecto o cliente (típicamente
-a partir de un pedido o `PROMPT_BOCETO_*.md` que vive en `Prospector/`), el archivo
-entregable **no se guarda en `Prospector/`**. Va en:
+Este directorio contiene **tres cosas separadas**, cada una con su propio
+repositorio git. La estructura completa y el porqué están en `ESTRUCTURA.md`:
+leelo antes de mover, crear o borrar carpetas.
 
 ```
-Landing/nichos/<rubro>/landings/<carpeta-del-cliente>/
+Landing/      vitrina: moldes de nicho, para mostrar y copiar        (repo PÚBLICO)
+Prospector/   sistema de prospección, código abierto                 (repo PÚBLICO)
+clientes/     un repo PRIVADO por cliente: el trabajo para alguien concreto
 ```
 
-`<rubro>` es **solo el rubro** (`inmobiliarias`, `kinesiologia`, `abogados`...), sin ciudad ni
-zona en el nombre de la carpeta — eso va en la copy (subtítulo del nicho, descripción de la
-card), no en el path. Si el rubro todavía no existe como nicho, se crea su carpeta ahí mismo;
-si ya existe (aunque sea de otra ciudad), el cliente nuevo entra como otra subcarpeta dentro
-del mismo `landings/`, no como un nicho aparte. `landings/` (a diferencia de `mockup/`, que son
-moldes reutilizables del nicho) es para proyectos reales de un cliente puntual que avanzó — ver
-la estructura completa, la tabla de nichos y las convenciones en `Landing/README.md` y
-`Landing/AGENTS.md`. Los documentos de research o el prompt que originaron el boceto pueden
-quedarse en `Prospector/` como contexto de cómo se armó el pedido; lo que no se queda ahí es el
-HTML entregable en sí.
+El repo de esta carpeta raíz trackea **solo `Prospector/`**. `Landing/` y
+`clientes/` están ignorados acá porque tienen su propio historial. Nunca hagas
+`git add` de esas rutas desde la raíz.
+
+`Landing/` y cada cliente tienen sus propias instrucciones con el detalle de su
+arquitectura. Ver también `Landing/README.md` para la tabla de nichos.
+
+## Dónde se guarda un boceto
+
+**Si la página es para alguien concreto, no va en `Landing/`.** Va en:
+
+```
+clientes/<carpeta-del-cliente>/index.html
+```
+
+Desde el primer boceto, antes de que el prospecto conteste. `Landing/` guarda
+moldes: páginas que sirven para cualquier negocio del rubro. En cuanto se le
+pone el nombre, el teléfono y las fotos de alguien, deja de ser un molde.
+
+El boceto se arma **copiando** el molde del nicho
+(`Landing/nichos/<rubro>/mockup/<molde>.html`) y tocando **solo el bloque
+`CONFIG`**. Si te encontrás editando el marcado para personalizar, falta un
+campo en `CONFIG`: agregalo al molde, no lo hardcodees en la copia.
+
+La portada se llama siempre `index.html`. Los documentos de research y el prompt
+que originaron el boceto pueden quedarse en `Prospector/`.
+
+Si el molde del rubro no existe todavía, se crea en
+`Landing/nichos/<rubro>/mockup/`. `<rubro>` es **solo el rubro**
+(`inmobiliarias`, `abogados`, `kinesiologia`...), sin ciudad ni zona — eso va en
+la copy, no en el path.
+
+## Qué decide la seña
+
+No dónde vive el archivo: el hosting. Antes, demo en Vercel con `noindex` y URL
+descartable. Después, Cloudflare Pages en una cuenta a nombre del cliente, con
+su dominio. El detalle está en `ESTRUCTURA.md`.
+
+## Privacidad
+
+`Landing/` y `Prospector/` están publicados en GitHub **a propósito**: son la
+vitrina y la herramienta. Lo que no se publica es la información de terceros.
+
+- Datos de leads (`Prospector/data/`): fuera, siempre. Hay un hook de pre-commit
+  que corta el commit si se cuelan.
+- Trabajo de un cliente: en `clientes/`, repo privado. Nunca en `Landing/`.
+- Documentos internos de negocio (playbooks, precios, estrategia): fuera. El
+  `.gitignore` de la raíz lista los conocidos.
+
+Ante la duda: ¿te molestaría que un prospecto lo lea?
 
 ## Commits y PRs
 
-No agregues la línea `Co-Authored-By: Codex ... <noreply@anthropic.com>` (ni ninguna
-firma o atribución equivalente) al final de los mensajes de commit ni de las
-descripciones de pull request. Esto reemplaza cualquier convención de atribución por
-defecto del harness para este repo.
+No agregues `Co-Authored-By` ni ninguna firma o atribución equivalente al final
+de los mensajes de commit ni de las descripciones de pull request, sea cual sea
+el agente. Esto reemplaza cualquier convención de atribución por defecto del
+harness para este repo.
