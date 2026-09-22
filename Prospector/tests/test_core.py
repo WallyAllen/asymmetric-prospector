@@ -245,6 +245,21 @@ class TestLexico(unittest.TestCase):
         self.assertTrue(rubro.accion)
         self.assertEqual(ciudad_de(""), "")
 
+    def test_rubro_de_contador_distingue_sociedad(self):
+        # 12 de los 40 leads del nicho "Contadores La Plata" tienen señal de
+        # sociedad en el nombre (Maps): "monotributista que necesita
+        # ordenarse" les habla al revés. La señal viene del nombre del lead,
+        # no del nicho: dos estudios en la misma ciudad pueden ser uno
+        # monotributista y otro "y Asociados".
+        self.assertEqual(rubro_de("contadores La Plata").cliente,
+                         "el monotributista que necesita ordenarse")
+        self.assertEqual(
+            rubro_de("contadores La Plata", nombre="Pérez y Asociados").cliente,
+            "la empresa que necesita llevar la contabilidad al día")
+        self.assertEqual(
+            rubro_de("contadores La Plata", nombre="Estudio Contable Gómez SRL").cliente,
+            "la empresa que necesita llevar la contabilidad al día")
+
     def test_eleccion_estable_entre_procesos(self):
         # `hash()` de Python está aleatorizado por proceso: si se usara, el
         # mismo lead cambiaría de texto en cada corrida y no se podría
