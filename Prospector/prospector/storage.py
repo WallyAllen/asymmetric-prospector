@@ -111,6 +111,8 @@ _PROGRESO = {
     "listo_whatsapp": 3,
     "enviado": 4,
     "enviado_whatsapp": 4,
+    "sin_whatsapp": 4,
+    "revisar_web": 4,
     "rebotado": 4,
     # Terminales: por encima de todo, para que ninguna fusión los pise. Un
     # `compose` que devolviera a "auditado" a alguien que contestó lo pondría
@@ -137,7 +139,7 @@ def merge_leads(existing: Iterable[Lead], nuevos: Iterable[Lead]) -> list[Lead]:
             index[nuevo.id] = nuevo
             continue
 
-        for campo in ("nombre", "url", "telefono", "direccion", "categoria", "rating",
+        for campo in ("nombre", "url", "telefono", "whatsapp_verificado", "whatsapp_fuente", "direccion", "categoria", "rating",
                       "resenas", "nicho", "email", "canal"):
             valor = getattr(nuevo, campo)
             if valor and not getattr(actual, campo):

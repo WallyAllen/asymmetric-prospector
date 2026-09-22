@@ -201,6 +201,8 @@ class Lead(_Serializable):
     email: str | None = None
     emails: list[str] = field(default_factory=list)
     telefono: str | None = None
+    whatsapp_verificado: str | None = None  # enlace publicado por el negocio, comprobado manualmente
+    whatsapp_fuente: str | None = None
     direccion: str | None = None
     categoria: str | None = None
     rating: float | None = None
@@ -209,7 +211,7 @@ class Lead(_Serializable):
     fuente: str = "google_maps"
     tiene_web: bool = True
     # crudo | auditado | descartado | listo | listo_whatsapp | enviado |
-    # enviado_whatsapp | rebotado | respondido | baja  (ver storage._PROGRESO)
+    # enviado_whatsapp | sin_whatsapp | revisar_web | rebotado | respondido | baja
     estado: str = "crudo"
     motivo_descarte: str | None = None
     audit: Audit | None = None

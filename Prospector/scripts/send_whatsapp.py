@@ -53,6 +53,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Envío semi-manual por WhatsApp Web.")
     parser.add_argument("--sin-fijos", action="store_true",
                         help="saltear las líneas fijas: solo celulares y WhatsApp publicados")
+    parser.add_argument("--probar-no-verificados", action="store_true",
+                        help="incluir teléfonos sin WhatsApp publicado; el chat puede no existir")
+    parser.add_argument("--solo", metavar="TELEFONOS",
+                        help="teléfonos de Maps separados por coma para limitar la tanda")
     parser.add_argument("--limite", type=int, help="tope para esta tanda, además del diario")
     args = parser.parse_args()
 
@@ -62,7 +66,13 @@ def main() -> int:
     print("=" * 62)
 
     leads = load_leads(COMPOSED_FILE)
-    cola = cola_whatsapp(leads, cfg)
+    cola = cola_whatsapp(leads, cfg, permitir_no_verificados=args.probar_no_verificados)
+    if args.solo:
+        elegidos = {telefono.strip() for telefono in args.solo.split(",") if telefono.strip()}
+        cola = [lead for lead in cola if lead.telefono in elegidos]
+        faltantes = elegidos - {lead.telefono for lead in cola}
+        if faltantes:
+            print(f"  Fuera de la cola: {', '.join(sorted(faltantes))}")
     if args.sin_fijos:
         # Un fijo puede tener WhatsApp Business, pero la mayoría no, y cada uno
         # gasta un lugar del cupo diario para abrir un chat que no existe.
@@ -72,7 +82,7 @@ def main() -> int:
         cola = [l for l in cola if para_whatsapp(l, cfg.whatsapp.country_code).confianza >= 2]
         print(f"  --sin-fijos: {antes - len(cola)} líneas fijas fuera de esta tanda")
     if not cola:
-        print("No hay mensajes de WhatsApp pendientes.")
+        print("No hay mensajes de WhatsApp pendientes para esta selección.")
         return 0
 
     cuota = cuota_whatsapp(cfg)
@@ -122,7 +132,13 @@ def main() -> int:
         if imagen_lista:
             print("          ✓ captura en el portapapeles: Ctrl+V para pegarla")
 
-        if input("          ¿Enviado? (ENTER sí / 'n' no): ").strip().lower() != "n":
+        resultado = input("          ¿Enviado? (ENTER sí / 'n' no / 'x' sin WhatsApp): ").strip().lower()
+        if resultado == "x":
+            lead.estado = "sin_whatsapp"
+            lead.motivo_descarte = "Número sin acceso a WhatsApp, comprobado manualmente"
+            save_leads(COMPOSED_FILE, leads)
+            print("          ↷ registrado sin WhatsApp; sale de la cola")
+        elif resultado == "":
             registrar_whatsapp(lead)
             cuota.anotar()
             save_leads(COMPOSED_FILE, leads)

@@ -11,7 +11,7 @@ from prospector.audit import rules  # noqa: E402
 from prospector.audit.signals import ProbeResult  # noqa: E402
 from prospector.compose.writer import FRASES_PROHIBIDAS, componer_por_plantilla, limpiar  # noqa: E402
 from prospector.config import ComposeSettings  # noqa: E402
-from prospector.models import Audit, Lead, Metrics  # noqa: E402
+from prospector.models import Audit, EmailDraft, Lead, Metrics  # noqa: E402
 from prospector.utils import (clean_emails, is_directory, lead_id, normalize_url,  # noqa: E402
                               registrable_domain)
 
@@ -354,6 +354,7 @@ class TestColaWhatsApp(unittest.TestCase):
 # ═══════════════ Teléfonos: a quién se le abre el chat ═══════════════
 
 from prospector.telefono import de_enlace_whatsapp, normalizar, para_whatsapp  # noqa: E402
+from prospector.deliver.whatsapp import cola_pendiente as cola_whatsapp  # noqa: E402
 
 
 class TestTelefono(unittest.TestCase):
@@ -368,6 +369,9 @@ class TestTelefono(unittest.TestCase):
         self.assertEqual("542214219413", fijo.e164)   # sin 9
         self.assertEqual("fijo", fijo.tipo)
         self.assertNotIn("5492214219413", fijo.e164)
+        fijo_con_15_en_los_digitos = normalizar("02215900000")
+        self.assertEqual("542215900000", fijo_con_15_en_los_digitos.e164)
+        self.assertEqual("fijo", fijo_con_15_en_los_digitos.tipo)
 
     def test_un_movil_pierde_el_15_y_gana_el_9(self):
         for crudo in ("0221 15-421-9413", "+54 9 221 421 9413", "5492214219413"):
@@ -396,6 +400,38 @@ class TestTelefono(unittest.TestCase):
         self.assertEqual("5492214440000", elegido.e164)
         self.assertTrue(elegido.verificado)
         self.assertEqual(3, elegido.confianza)      # ordena primero en la cola
+
+    def test_whatsapp_verificado_manual_gana_y_sobrevive_fusion(self):
+        lead = Lead(nombre="Ejemplo", telefono="02215900000",
+                    whatsapp_verificado="https://wa.me/5492216000000",
+                    whatsapp_fuente="https://ejemplo.com/contacto")
+        auditado = Lead(id=lead.id, nombre="Ejemplo", estado="auditado")
+        fusionado = merge_leads([lead], [auditado])[0]
+        elegido = para_whatsapp(fusionado)
+        self.assertEqual("5492216000000", elegido.e164)
+        self.assertTrue(elegido.verificado)
+        self.assertEqual("https://ejemplo.com/contacto", fusionado.whatsapp_fuente)
+
+    def test_numero_sin_whatsapp_no_vuelve_a_la_cola_tras_fusion(self):
+        fallido = Lead(nombre="Ejemplo", estado="sin_whatsapp")
+        auditado = Lead(id=fallido.id, nombre="Ejemplo", estado="auditado")
+        self.assertEqual("sin_whatsapp", merge_leads([fallido], [auditado])[0].estado)
+
+    def test_web_en_revision_no_vuelve_a_la_cola_tras_fusion(self):
+        pendiente = Lead(nombre="Ejemplo", estado="revisar_web")
+        auditado = Lead(id=pendiente.id, nombre="Ejemplo", estado="auditado")
+        self.assertEqual("revisar_web", merge_leads([pendiente], [auditado])[0].estado)
+
+    def test_cola_whatsapp_exige_numero_publicado(self):
+        comprobado = Lead(nombre="Con WhatsApp", estado="listo_whatsapp",
+                          whatsapp_verificado="https://wa.me/5492216000000",
+                          email_draft=EmailDraft(cuerpo="Hola"))
+        supuesto = Lead(nombre="Solo celular", estado="listo_whatsapp",
+                        telefono="0221 15-421-9413",
+                        email_draft=EmailDraft(cuerpo="Hola"))
+        self.assertEqual([comprobado], cola_whatsapp([comprobado, supuesto]))
+        self.assertEqual(2, len(cola_whatsapp([comprobado, supuesto],
+                                              permitir_no_verificados=True)))
 
     def test_sin_nada_mejor_se_usa_el_fijo_pero_marcado(self):
         lead = Lead(nombre="X", url="https://x.com.ar", telefono="02214219413")

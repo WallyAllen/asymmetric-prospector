@@ -71,7 +71,8 @@ def _limpiar_huerfanos(vigentes: set[str]) -> None:
 
 # ─────────────────────────────── Cola ───────────────────────────────
 
-def cola_pendiente(leads: list[Lead], cfg: Settings = settings) -> list[Lead]:
+def cola_pendiente(leads: list[Lead], cfg: Settings = settings,
+                   permitir_no_verificados: bool = False) -> list[Lead]:
     """Leads listos para escribir por WhatsApp, ordenados por oportunidad.
 
     Aplica la lista de supresión, que este canal ignoraba por completo: quien
@@ -89,12 +90,10 @@ def cola_pendiente(leads: list[Lead], cfg: Settings = settings) -> list[Lead]:
         lead for lead in leads
         if lead.estado == "listo_whatsapp" and lead.email_draft
         and not esta_suprimido(lead)
-        and para_whatsapp(lead, cfg.whatsapp.country_code)
+        and (numero := para_whatsapp(lead, cfg.whatsapp.country_code))
+        and (permitir_no_verificados or numero.verificado)
     ]
-    # Primero la confianza del número, después el score. Un lead de 100/100 al
-    # que no se le puede escribir vale menos que uno de 80 con el WhatsApp
-    # publicado en su propia web: el orden de la cola es una decisión
-    # económica cuando hay tope diario.
+    # Los números no verificados solo entran si el operador los pide expresamente.
     listos.sort(key=lambda l: (
         -para_whatsapp(l, cfg.whatsapp.country_code).confianza,
         -(l.audit.score if l.audit else 0),
@@ -157,7 +156,7 @@ def exportar(leads: list[Lead], cfg: Settings = settings) -> list[Lead]:
     tope = cfg.whatsapp.daily_cap
     lineas = [
         "ÍNDICE — ordenado por oportunidad (score de auditoría)",
-        "✓wa = WhatsApp publicado en su web · ok = celular · ? = línea fija, puede no tener WhatsApp",
+        "✓wa = WhatsApp publicado por el negocio · ok = celular · ? = línea fija, puede no tener WhatsApp",
         "Copiá el texto del archivo y pegalo en WhatsApp Web al teléfono indicado,",
         f"o usá `py scripts/send_whatsapp.py`. Tope diario sugerido: {tope} mensajes.",
         "=" * 70,

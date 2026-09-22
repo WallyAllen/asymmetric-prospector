@@ -70,7 +70,7 @@ class Telefono:
     @property
     def etiqueta(self) -> str:
         if self.verificado:
-            return "WhatsApp publicado en su web"
+            return "WhatsApp publicado por el negocio"
         return {"movil": "celular", "fijo": "línea fija (puede no tener WhatsApp)",
                 "internacional": "número internacional"}.get(self.tipo, "sin teléfono usable")
 
@@ -111,7 +111,9 @@ def normalizar(crudo: str | None, cc: str = "54") -> Telefono:
         return SIN_TELEFONO
 
     # Móvil escrito a la argentina: área + 15 + abonado.
-    coincidencia = re.match(r"^(\d{2,4})15(\d{6,8})$", nacional) if movil else None
+    # Área + abonado suman 10 dígitos. Con el 15 intercalado deben ser 12;
+    # sin esto, 0221 590-0000 se confundía con 022 15 900000.
+    coincidencia = re.fullmatch(r"(\d{2,4})15(\d{6,8})", nacional) if movil and len(nacional) == 12 else None
     if coincidencia:
         area, abonado = coincidencia.groups()
         return _acotar(f"{cc}{movil}{area}{abonado}", "movil")
@@ -155,6 +157,9 @@ def para_whatsapp(lead, cc: str = "54") -> Telefono:
     devuelve vacío y quien envía saltea el lead. Abrir el chat equivocado es
     peor que no escribir.
     """
+    manual = de_enlace_whatsapp(getattr(lead, "whatsapp_verificado", None))
+    if manual:
+        return manual
     metricas = getattr(getattr(lead, "audit", None), "metrics", None)
 
     if metricas is not None:

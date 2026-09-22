@@ -113,6 +113,14 @@ def auditar_leads(cfg: Settings = settings, forzar: bool = False, limite: int | 
 def redactar_correos(cfg: Settings = settings, forzar: bool = False) -> list[Lead]:
     ensure_dirs()
     leads = merge_leads(load_leads(COMPOSED_FILE), load_leads(AUDITED_FILE))
+    for lead in leads:
+        if (lead.audit and lead.audit.score < cfg.audit.min_score
+                and lead.estado in {"auditado", "listo", "listo_whatsapp", "descartado"}):
+            lead.email_draft = None
+            lead.estado = "descartado"
+            lead.motivo_descarte = (
+                f"score {lead.audit.score} por debajo del umbral {cfg.audit.min_score}"
+            )
     redactar_todos(leads, cfg, forzar=forzar)
     redactar_whatsapp(leads, cfg, forzar=forzar)
     exportar_preview(leads)
