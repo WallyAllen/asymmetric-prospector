@@ -28,7 +28,7 @@ from ..config import TEMPLATES_DIR, ComposeSettings
 from ..logging_setup import get_logger
 from ..models import EmailDraft, Finding, Lead
 from ..storage import to_absolute
-from ..utils import dialecto_por_url, registrable_domain
+from ..utils import dialecto_por_url, negocio_domain
 from .lexicon import busqueda_de, elegir, rubro_de
 
 log = get_logger("redactor")
@@ -471,7 +471,7 @@ def hallazgos_de(lead: Lead, maximo: int) -> list[Finding]:
 
 
 def dominio_de(lead: Lead) -> str:
-    return registrable_domain(lead.url) or (lead.url or "").replace(
+    return negocio_domain(lead.url) or (lead.url or "").replace(
         "https://", "").replace("http://", "").rstrip("/")
 
 
@@ -495,7 +495,7 @@ def componer_por_plantilla(
     secundario = hallazgos[1] if len(hallazgos) > 1 else None
     dominio = dominio_de(lead)
     dialecto = dialecto_por_url(lead.url)
-    rubro = rubro_de(lead.nicho)
+    rubro = rubro_de(lead.nicho, nombre=lead.nombre)
     busqueda = busqueda_de(lead.nicho)
     inaccesible = bool(auditoria and auditoria.veredicto == "inaccesible")
 
@@ -506,6 +506,8 @@ def componer_por_plantilla(
         linea_adjunto = ""
     elif es_marcada:
         linea_adjunto = "Te adjunto la captura con la zona marcada.\n\n"
+    elif principal and principal.rule_id == "enlace_tienda_roto":
+        linea_adjunto = "Te adjunto la captura del enlace que probé.\n\n"
     else:
         linea_adjunto = "Te adjunto una captura de la portada, tal como la vi.\n\n"
 
@@ -516,7 +518,8 @@ def componer_por_plantilla(
         return [
             saludo(lead),
             _sin_web(lead, rubro, busqueda, con_reputacion),
-            elegir(SOLUCION_SIN_WEB, lead.id, "solucion") + cierre_prueba,
+            ("Un catálogo con prendas, talles y pedidos para revisar en WhatsApp puede simplificar esas consultas."
+             if rubro.plural == "tiendas de ropa" else elegir(SOLUCION_SIN_WEB, lead.id, "solucion")) + cierre_prueba,
             elegir(OFERTAS, lead.id, "oferta").replace("esa portada", "esa página")
             .replace("esa pantalla", "esa página"),
             elegir(CIERRES, lead.id, "cierre"),
@@ -604,6 +607,8 @@ def _con_web(lead: Lead, principal: Finding | None, secundario: Finding | None,
         busqueda=busqueda, dominio=dominio)
     rep = frase_reputacion(lead) if con_reputacion else ""
     transicion = elegir(TRANSICIONES, lead.id, "transicion")
+    if principal and principal.rule_id == "enlace_tienda_roto":
+        transicion = "Al seguir un enlace de la tienda vi que"
     observacion = minuscula_inicial(
         principal.observacion if principal else
         "la primera pantalla no está trabajando para convertir visitas en contactos"
@@ -631,7 +636,8 @@ def _cierre_con_web(lead: Lead, principal: Finding | None, rubro, cierre_prueba:
     puente = (principal.puente if principal else "") or (
         "ordenar esa pantalla es lo primero que suelo mover"
     )
-    oferta = elegir(OFERTAS, lead.id, "oferta")
+    oferta = ("Puedo armarte un boceto de cómo facilitar la elección de prendas y el pedido."
+              if rubro.plural == "tiendas de ropa" else elegir(OFERTAS, lead.id, "oferta"))
     piezas = [mayuscula_inicial(t).rstrip(".") + "." for t in (consecuencia, puente) if t]
     return " ".join(piezas + [f"{oferta}{cierre_prueba}"])
 
@@ -730,11 +736,19 @@ def componer_con_ia(
             "Menciona en una frase que adjuntas una captura de la portada tal como la viste, SIN decir "
             "que está marcada, señalada o resaltada (no lo está, es la captura sin anotar)."
         )
+        if hallazgos and hallazgos[0].rule_id == "enlace_tienda_roto":
+            regla_adjunto = "Adjuntas la captura del enlace probado, sin marcas. No digas que es la portada."
     regla_estado = (
         "12. El sitio no cargó cuando lo visitamos (hallazgo sitio_inaccesible): NO digas que viste su "
         "primera pantalla ni que navegaste la web. Contá que intentaste entrar y no cargó."
         if inaccesible else ""
     )
+    if rubro_de(lead.nicho).plural == "tiendas de ropa":
+        regla_estado += (
+            " Habla de prendas, talles y pedidos. Ofrece un boceto acorde al hallazgo. "
+            "La precalificación de tienda no acredita haber elegido talles, agregado productos, "
+            "calculado envío o probado pagos: no afirmes esos pasos ni inventes fallos de compra."
+        )
     regla_prueba = (
         f'11. Si encaja de forma natural (no forzado), sumá esta prueba de que ya hiciste este trabajo: '
         f'"{cfg.sender_proof.strip()}".'
@@ -785,6 +799,11 @@ def _ruta_adjunto(lead: Lead) -> tuple[str | None, bool]:
     if not lead.audit:
         return None, False
     capturas = lead.audit.capturas
+    principal = lead.audit.argumentables[:1]
+    if principal and principal[0].rule_id == "enlace_tienda_roto":
+        roto = next((p for p in lead.audit.tienda.get("paginas", []) if p.get("roto_confirmado")), None)
+        if roto:
+            return capturas.get(f"tienda_{roto['clase']}"), False
     marcada = capturas.get("principal") or capturas.get("anotada")
     if marcada:
         return marcada, bool(lead.audit.captura_marcada)

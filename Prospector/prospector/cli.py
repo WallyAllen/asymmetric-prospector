@@ -8,6 +8,7 @@ from . import __version__
 from .config import AUDITED_FILE, COMPOSED_FILE, RAW_FILE, ensure_dirs, settings
 from .logging_setup import setup_logging
 from .storage import load_leads
+from .utils import coincide_nicho
 
 BANNER = r"""
   ┌─────────────────────────────────────────────┐
@@ -54,7 +55,7 @@ def _parser() -> argparse.ArgumentParser:
     a.add_argument("--solo", metavar="VEREDICTO",
                    help="re-medir solo los de ese veredicto (p. ej. inaccesible, no_medido)")
     a.add_argument("--sin-ia", action="store_true", help="solo señales objetivas, sin jurado visual")
-    a.add_argument("--umbral", type=int, help="score mínimo para no descartar (por defecto 35)")
+    a.add_argument("--umbral", type=int, help="score mínimo para no descartar (configurado en AUDIT_MIN_SCORE)")
     a.add_argument("--concurrencia", type=int, help="webs auditadas en paralelo")
     a.add_argument("--visible", action="store_true")
 
@@ -85,10 +86,12 @@ def _parser() -> argparse.ArgumentParser:
     rw.add_argument("--fecha", help="día real de esos envíos, AAAA-MM-DD (si no, queda sin fecha)")
     i = sub.add_parser("report", help="generar el informe HTML")
     i.add_argument("--minimo", type=int, default=0, help="score mínimo a incluir")
+    for comando in (e, a, c, s, sub.choices["status"], i):
+        comando.add_argument("--nicho", help="filtrar por parte de la búsqueda, sin distinguir tildes ni mayúsculas")
     return p
 
 
-def _estado() -> None:
+def _estado(nicho: str | None = None) -> None:
     etapas = (
         ("1 · minados", RAW_FILE),
         ("2 · auditados", AUDITED_FILE),
@@ -96,14 +99,14 @@ def _estado() -> None:
     )
     print(BANNER)
     for titulo, ruta in etapas:
-        leads = load_leads(ruta)
+        leads = [l for l in load_leads(ruta) if coincide_nicho(l.nicho, nicho)]
         conteo: dict[str, int] = {}
         for lead in leads:
             conteo[lead.estado] = conteo.get(lead.estado, 0) + 1
         detalle = ", ".join(f"{v} {k}" for k, v in sorted(conteo.items())) or "vacío"
         print(f"  {titulo:<16} {len(leads):>4} leads   ({detalle})")
 
-    auditados = load_leads(AUDITED_FILE)
+    auditados = [l for l in load_leads(AUDITED_FILE) if coincide_nicho(l.nicho, nicho)]
     calificados = [l for l in auditados if l.audit and l.estado != "descartado"]
     if calificados:
         calificados.sort(key=lambda l: -l.audit.score)
@@ -140,19 +143,20 @@ def main(argv: list[str] | None = None) -> int:
             pipeline.minar(" ".join(args.query), cfg, fuente=args.fuente,
                            enriquecer=not args.sin_contactos)
         elif args.comando == "enrich":
-            pipeline.enriquecer_contactos(cfg)
+            pipeline.enriquecer_contactos(cfg, nicho=args.nicho)
         elif args.comando == "audit":
             pipeline.auditar_leads(cfg, forzar=args.forzar, limite=args.limite,
-                                   solo_veredicto=args.solo, reanudar=args.reanudar)
+                                   solo_veredicto=args.solo, reanudar=args.reanudar, nicho=args.nicho)
         elif args.comando == "compose":
-            pipeline.redactar_correos(cfg, forzar=args.forzar)
+            pipeline.redactar_correos(cfg, forzar=args.forzar, nicho=args.nicho)
         elif args.comando == "send":
-            pipeline.enviar_correos(cfg, simular=not args.enviar_de_verdad, limite=args.limite)
+            pipeline.enviar_correos(cfg, simular=not args.enviar_de_verdad, limite=args.limite,
+                                   nicho=args.nicho)
         elif args.comando == "run":
             pipeline.ejecutar_todo(" ".join(args.query), cfg, fuente=args.fuente,
                                    simular=not args.enviar_de_verdad, limite_envio=args.limite)
         elif args.comando == "status":
-            _estado()
+            _estado(nicho=args.nicho)
         elif args.comando == "respondio":
             from . import respuestas
             if respuestas.marcar(args.clave, nota=args.nota, baja=args.baja) is None:
@@ -164,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
             from . import migrate
             migrate.recuperar_whatsapp(simular=not args.aplicar, fecha=args.fecha)
         elif args.comando == "report":
-            report.generar(minimo=args.minimo)
+            report.generar(minimo=args.minimo, nicho=args.nicho)
     except KeyboardInterrupt:
         log.warning("Interrumpido. Lo ya medido quedó guardado: "
                     "retomá con `py -m prospector audit --reanudar`.")

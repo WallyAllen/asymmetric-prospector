@@ -35,6 +35,7 @@ from prospector.config import COMPOSED_FILE, settings  # noqa: E402
 from prospector.deliver import cola_whatsapp, cuota_whatsapp, registrar_whatsapp  # noqa: E402
 from prospector.telefono import para_whatsapp  # noqa: E402
 from prospector.storage import load_leads, save_leads, to_absolute  # noqa: E402
+from prospector.utils import coincide_nicho  # noqa: E402
 
 def copiar_imagen(ruta: Path) -> bool:
     """Deja la captura en el portapapeles (solo Windows)."""
@@ -58,6 +59,7 @@ def main() -> int:
     parser.add_argument("--solo", metavar="TELEFONOS",
                         help="teléfonos de Maps separados por coma para limitar la tanda")
     parser.add_argument("--limite", type=int, help="tope para esta tanda, además del diario")
+    parser.add_argument("--nicho", help="filtrar por parte de la búsqueda, sin distinguir tildes ni mayúsculas")
     args = parser.parse_args()
 
     cfg = settings
@@ -67,6 +69,7 @@ def main() -> int:
 
     leads = load_leads(COMPOSED_FILE)
     cola = cola_whatsapp(leads, cfg, permitir_no_verificados=args.probar_no_verificados)
+    cola = [lead for lead in cola if coincide_nicho(lead.nicho, args.nicho)]
     if args.solo:
         elegidos = {telefono.strip() for telefono in args.solo.split(",") if telefono.strip()}
         cola = [lead for lead in cola if lead.telefono in elegidos]

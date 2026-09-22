@@ -1,0 +1,6 @@
+interface:
+  display_name: "LandingPage · Conocimiento en Obsidian"
+  short_description: "Guarda decisiones y aprendizajes del proyecto"
+  default_prompt: "Usá $landingpage-obsidian para registrar en la bóveda del proyecto la información relevante de esta tarea, actualizando las notas existentes."
+policy:
+  allow_implicit_invocation: true

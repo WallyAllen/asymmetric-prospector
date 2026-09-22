@@ -105,3 +105,20 @@ las cards: no hay números que actualizar a mano.
 - En `Prospector/`, el hook de pre-commit corta cualquier commit que se lleve
   datos de leads o un `.env`. Se activa una vez por clon:
   `git config core.hooksPath Prospector/scripts/hooks`.
+
+
+## Bóveda de conocimiento
+
+Desde el 01/10/2026, la bóveda principal del proyecto vive en
+`F:\.Proyectos\.LandingPage\Obsidian Vault`, junto a `Landing/`,
+`Prospector/` y `clientes/`. Abrir esa carpeta como bóveda de Obsidian.
+
+El índice es [Inicio](<Obsidian Vault/Inicio.md>). Organiza el mapa del proyecto,
+modelo de negocio, clientes, nichos, decisiones, aprendizajes, procesos,
+diario y plantillas. El repo conserva lo que se ejecuta; la bóveda conserva
+lo que se sabe y el contexto para continuar.
+
+La bóveda contiene información interna y está excluida del repositorio
+público de la raíz. `obsidian-staging/` se conservó como origen de recuperación;
+no es la bóveda principal. Los antecedentes originales y las notas
+reconstruidas se distinguen en el registro de recuperación de la bóveda.

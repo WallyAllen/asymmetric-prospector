@@ -134,6 +134,20 @@ def _tarjeta(lead: Lead) -> str:
             f"<pre>{e(lead.email_draft.cuerpo)}</pre></div>"
         )
 
+    tienda = ""
+    if auditoria and auditoria.tienda:
+        revision = auditoria.tienda
+        paginas = "".join(f"<li>{e(p['clase'])}: {e(p['url'])} — "
+                          f"{e(str(p.get('status') or p.get('estado') or 'no medido'))}</li>"
+                          for p in revision.get("paginas", []))
+        pendientes = "".join(f"<li>{e(p)}</li>" for p in revision.get("pendientes", []))
+        tienda = (f"<div class='correo'><b>Precalificación de tienda: {e(revision.get('tipo', 'no_medido'))}</b>"
+                  f"<ul>{paginas}</ul><b>Pendiente de prueba funcional</b><ul>{pendientes}</ul></div>")
+        for clave in ("tienda_producto", "tienda_carrito"):
+            src = _miniatura(to_absolute(auditoria.capturas.get(clave)))
+            if src:
+                tienda += f'<figure><img src="{src}" alt="{e(clave.replace("_", " "))}"></figure>'
+
     return f"""<article class="lead">
   <div class="cab">
     <div>
@@ -143,15 +157,17 @@ def _tarjeta(lead: Lead) -> str:
     <div class="score"><b>{score}</b><span class="badge b-{e(veredicto)}">{e(veredicto.replace('_', ' '))}</span></div>
   </div>
   <div class="barra"><i style="width:{min(100, score)}%"></i></div>
-  {hallazgos}{imagenes}{correo}
+  {hallazgos}{imagenes}{tienda}{correo}
 </article>"""
 
 
-def generar(destino: Path | None = None, minimo: int = 0) -> Path:
+def generar(destino: Path | None = None, minimo: int = 0, nicho: str | None = None) -> Path:
+    from .utils import coincide_nicho
     leads = merge_leads(load_leads(COMPOSED_FILE), load_leads(AUDITED_FILE))
     interesantes = [
         lead for lead in leads
         if lead.audit and lead.audit.score >= minimo and lead.estado != "descartado"
+        and coincide_nicho(lead.nicho, nicho)
     ]
     interesantes.sort(key=lambda l: -(l.audit.score if l.audit else 0))
 

@@ -17,7 +17,7 @@ from ..config import DESKTOP_VIEWPORT, MOBILE_DEVICE_SCALE, MOBILE_UA, MOBILE_VI
 from ..logging_setup import get_logger
 from ..models import Metrics
 from ..telefono import de_enlace_whatsapp, normalizar
-from ..utils import registrable_domain, slugify
+from ..utils import negocio_domain, slugify
 from .probe_js import AUDIT_JS, WEB_VITALS_INIT_JS
 
 log = get_logger("señales")
@@ -37,6 +37,7 @@ class ProbeResult:
     # eso no es una web caída, es una medición fallida, y no da para escribirle
     # a nadie diciéndole que su sitio no anda.
     dns_ok: bool | None = None
+    tienda: dict[str, Any] = field(default_factory=dict)
 
 
 class SiteProbe:
@@ -84,9 +85,9 @@ class SiteProbe:
         await context.add_init_script(WEB_VITALS_INIT_JS)
         return context
 
-    async def probe(self, url: str, slug: str | None = None) -> ProbeResult:
+    async def probe(self, url: str, slug: str | None = None, tienda: bool = False) -> ProbeResult:
         resultado = ProbeResult()
-        carpeta = SHOTS_DIR / (slug or slugify(registrable_domain(url) or url))
+        carpeta = SHOTS_DIR / (slug or slugify(negocio_domain(url) or url))
         carpeta.mkdir(parents=True, exist_ok=True)
 
         # Dos intentos, con una pausa. El mensaje que se manda cuando un sitio
@@ -128,6 +129,21 @@ class SiteProbe:
 
         resultado.ok = True
         _consolidar(resultado)
+        if tienda:
+            from .tienda import inspeccionar
+            context = await self._new_context(mobile=True)
+            try:
+                resultado.tienda = await inspeccionar(context, resultado.url_final or url,
+                                                      carpeta, self.cfg.nav_timeout_ms)
+                for clave, ruta in resultado.tienda.pop("capturas", {}).items():
+                    resultado.capturas[clave] = Path(ruta)
+                if any(p.get("senales", {}).get("compra") for p in resultado.tienda.get("paginas", [])):
+                    resultado.metrics.tiene_compra = True
+            except Exception as exc:
+                log.info("Revisión de tienda incompleta: %s", type(exc).__name__)
+                resultado.tienda = {"tipo": "no_medido", "pendientes": ["Revisar manualmente el flujo de compra"]}
+            finally:
+                await context.close()
         return resultado
 
     async def _probe_desktop(self, url: str, res: ProbeResult, carpeta: Path) -> None:
@@ -304,6 +320,7 @@ def _consolidar(res: ProbeResult) -> None:
     met.tiene_formulario = bool(d.get("formularios"))
     met.tiene_tel = bool(d.get("telLinks"))
     met.tiene_whatsapp = bool(d.get("whatsapp"))
+    met.tiene_compra = bool(d.get("tieneCompra"))
     met.whatsapp_web = _numero_de_whatsapp(d.get("whatsappHrefs"))
     met.tel_web = _primer_tel(d.get("telHrefs"))
     met.generador = d.get("generador")

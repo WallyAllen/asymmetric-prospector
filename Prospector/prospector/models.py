@@ -120,6 +120,7 @@ class Metrics(_Serializable):
     tiene_formulario: bool | None = None
     tiene_tel: bool | None = None
     tiene_whatsapp: bool | None = None
+    tiene_compra: bool | None = None     # control de compra visible; no acredita una compra completada
     # Números sacados de la propia web. El de WhatsApp es el único verificado
     # que existe: lo publicó el negocio y por definición está en WhatsApp. El
     # de Maps es una línea fija el 69% de las veces, y un fijo no se puede
@@ -152,6 +153,7 @@ class Audit(_Serializable):
     metrics: Metrics = field(default_factory=Metrics)
     capturas: dict[str, str] = field(default_factory=dict)   # rutas RELATIVAS al proyecto
     vision: dict[str, Any] = field(default_factory=dict)     # dictamen del jurado IA
+    tienda: dict[str, Any] = field(default_factory=dict)     # señales y enlaces comprobados, sin inferir ventas
     # True solo si la captura "anotada" tiene de verdad un recuadro rojo
     # dibujado (hubo una zona detectable). Sin esto, "anotada" solo
     # significaba "se le puso un pie de foto", y el correo podía prometer
@@ -169,6 +171,7 @@ class Audit(_Serializable):
             metrics=Metrics.from_dict(data.get("metrics", {})),
             capturas=dict(data.get("capturas", {})),
             vision=dict(data.get("vision", {})),
+            tienda=dict(data.get("tienda", {})),
             captura_marcada=bool(data.get("captura_marcada", False)),
             auditado_el=data.get("auditado_el", _now()),
         )

@@ -219,7 +219,7 @@ def sin_vias_de_contacto(res: ProbeResult) -> Finding | None:
     if not res.ok:
         return None
     met = res.metrics
-    if met.tiene_formulario or met.tiene_tel or met.tiene_whatsapp:
+    if met.tiene_formulario or met.tiene_tel or met.tiene_whatsapp or met.tiene_compra:
         return None
     return Finding(
         rule_id="sin_contacto",
@@ -420,7 +420,7 @@ def sin_telefono_pulsable(res: ProbeResult) -> Finding | None:
     # alguien "tu botón no se puede tocar" cuando el de WhatsApp funciona
     # perfecto es un argumento falso que se detecta a la primera mirada).
     # Esto solo importa cuando la única vía de contacto es un formulario.
-    if not res.ok or met.tiene_tel or met.tiene_whatsapp or not met.tiene_formulario:
+    if not res.ok or met.tiene_tel or met.tiene_whatsapp or met.tiene_compra or not met.tiene_formulario:
         return None
     return Finding(
         rule_id="sin_tel_movil",
@@ -614,6 +614,24 @@ VEREDICTOS = (
     (28, "mejorable"),
     (0, "sano"),
 )
+
+
+@regla
+def enlace_tienda_roto(res: ProbeResult) -> Finding | None:
+    # Solo un 404/410 repetido en un enlace publicado en la tienda. Un
+    # timeout, un bloqueo o un selector desconocido nunca acreditan un defecto.
+    roto = next((p for p in res.tienda.get("paginas", []) if p.get("roto_confirmado")), None)
+    if not res.ok or not roto:
+        return None
+    clase = "producto" if roto["clase"] == "producto" else "carrito"
+    return Finding(
+        rule_id="enlace_tienda_roto", titulo=f"Enlace de {clase} devuelve un error",
+        severidad=8, peso=22, categoria="killer", viewport="mobile",
+        evidencia=f"{roto['url']}: HTTP {roto['status']} en dos visitas desde el enlace publicado",
+        observacion=f"el enlace de {clase} que probé devuelve un error {roto['status']} en dos visitas",
+        consecuencia=f"quien sigue ese enlace no puede ver el {clase} desde ahí",
+        puente="corregir ese enlace permite continuar el recorrido de compra",
+    )
 
 
 def evaluar(res: ProbeResult) -> tuple[int, str, list[Finding]]:

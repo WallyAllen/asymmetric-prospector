@@ -67,3 +67,29 @@ No agregues `Co-Authored-By` ni ninguna firma o atribución equivalente al final
 de los mensajes de commit ni de las descripciones de pull request, sea cual sea
 el agente. Esto reemplaza cualquier convención de atribución por defecto del
 harness para este repo.
+
+
+## Bóveda de conocimiento del proyecto
+
+La bóveda principal está en `Obsidian Vault/`, dentro de este workspace.
+Empezar por `Obsidian Vault/Inicio.md` y consultar la nota del cliente o nicho
+que corresponda antes de tomar decisiones basadas en antecedentes.
+`obsidian-staging/` y la bóveda anterior de Documentos son fuentes conservadas,
+no el lugar donde continuar el registro.
+
+Usar automáticamente la skill `landingpage-obsidian`, en
+`.agents/skills/landingpage-obsidian/SKILL.md`, durante las tareas de este
+workspace y sus subproyectos. Leer sus criterios al iniciar y evaluar al
+cerrar si surgió información que merece guardarse: estructura y sus cambios,
+clientes, decisiones, aprendizajes, procesos y plantillas. Si cumple, actualizar
+la bóveda sin pedir confirmación por cada nota; si no cumple, no crear registros.
+
+El usuario autorizó este registro automático de conocimiento. La autorización
+no cambia los permisos del entorno ni habilita contactos, publicaciones o
+infraestructura. Seguir `Obsidian Vault/Sistema/Cómo mantener esta bóveda.md`,
+con fecha y evidencia. Actualizar o enlazar las notas existentes; no duplicar
+la documentación técnica del repo.
+
+Las notas históricas no acreditan estado actual de pagos, servicios o
+publicaciones. Distinguir confirmado, propuesto y pendiente. No guardar
+credenciales ni publicar la bóveda: está excluida del Git público de la raíz.

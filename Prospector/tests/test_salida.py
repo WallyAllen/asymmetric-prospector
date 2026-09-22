@@ -109,8 +109,10 @@ class TestSalidas(unittest.TestCase):
 
     def test_informe_html_se_genera(self):
         from prospector import report
+        from unittest.mock import patch
 
-        destino = report.generar(destino=self.tmp / "informe.html")
+        with patch.object(report, "load_leads", return_value=[]):
+            destino = report.generar(destino=self.tmp / "informe.html")
         self.assertTrue(destino.exists())
         contenido = destino.read_text(encoding="utf-8")
         self.assertIn("Informe de prospección", contenido)

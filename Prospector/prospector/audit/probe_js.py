@@ -176,6 +176,10 @@ AUDIT_JS = r"""
     telLinks: document.querySelectorAll('a[href^="tel:"]').length,
     mailtoLinks: document.querySelectorAll('a[href^="mailto:"]').length,
     whatsapp: document.querySelectorAll('a[href*="wa.me"],a[href*="api.whatsapp"],a[href*="whatsapp.com/send"]').length,
+    tieneCompra: clickables.some(el => visible(el) &&
+      (/(agregar al carrito|añadir al carrito|add to cart|comprar|buy now)/i.test(
+        txt(el) + ' ' + (el.getAttribute('aria-label') || '') + ' ' + (el.value || '')) ||
+       (el.tagName === 'A' && el.href && /\/(cart|carrito|carro)\/?$/i.test(new URL(el.href).pathname)))),
     // El href, no solo la cuenta. Un enlace de WhatsApp puesto por el propio
     // negocio en su web es el único número del que se sabe con certeza que
     // está en WhatsApp: el de Maps es fijo dos de cada tres veces y no hay

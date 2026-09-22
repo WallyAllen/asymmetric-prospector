@@ -7,6 +7,21 @@ import unicodedata
 from typing import Iterable
 from urllib.parse import urlparse, urlunparse
 
+
+def coincide_nicho(nicho: str, filtro: str | None) -> bool:
+    """Coincidencia parcial sin distinguir mayúsculas, tildes ni espacios."""
+    def plano(texto: str) -> str:
+        texto = unicodedata.normalize("NFKD", texto).casefold()
+        return " ".join("".join(c for c in texto if not unicodedata.combining(c)).split())
+
+    return not filtro or plano(filtro) in plano(nicho or "")
+
+
+def es_indumentaria(nicho: str) -> bool:
+    return bool(re.search(r"\b(ropa|indumentaria|boutiques?|vestimenta|calzado|zapaterias?|clothing|apparel)\b",
+                          unicodedata.normalize("NFKD", nicho or "").encode("ascii", "ignore").decode(),
+                          re.I))
+
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"(?:\+?\d{1,3}[\s.\-]?)?(?:\(?\d{2,4}\)?[\s.\-]?){2,4}\d{2,4}")
 
@@ -46,7 +61,7 @@ _DIRECTORY_PATH_RE = re.compile(
 
 # Marcadores de que el "sitio" es en realidad un perfil dentro de otra plataforma.
 PLATFORM_MARKERS = ("business.site", "negocio.site", "sites.google.com", "wixsite.com/",
-                    "myshopify.com", "square.site", "linktr.ee")
+                    "square.site", "linktr.ee")
 
 # Emails genéricos de plataformas / basura que la regex atrapa.
 EMAIL_BLOCKLIST_DOMAINS = {
@@ -103,6 +118,15 @@ def registrable_domain(url: str | None) -> str:
     if parts[-2] in {"co", "com", "org", "net", "gob", "gov", "edu"} and len(parts[-1]) == 2:
         return ".".join(parts[-3:])
     return ".".join(parts[-2:])
+
+
+def negocio_domain(url: str | None) -> str:
+    """En plataformas de tiendas, cada subdominio representa un negocio."""
+    host = domain_of(url)
+    if any(host.endswith("." + base) for base in
+           ("myshopify.com", "mitiendanube.com", "empretienda.com.ar")):
+        return host
+    return registrable_domain(url)
 
 
 def is_directory(url: str | None) -> bool:
@@ -178,7 +202,7 @@ def slugify(value: str, max_len: int = 60) -> str:
 
 def lead_id(url: str | None, name: str = "", email: str | None = None) -> str:
     """Identificador estable: dominio si lo hay, si no nombre+email hasheados."""
-    host = registrable_domain(url)
+    host = negocio_domain(url)
     if host:
         return host
     seed = f"{name}|{email or ''}".lower()
