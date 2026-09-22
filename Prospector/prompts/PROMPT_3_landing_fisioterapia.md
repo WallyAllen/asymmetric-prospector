@@ -1,12 +1,12 @@
 # PROMPT 3 — Landing de Kinesiología / Fisioterapia (Mendoza)
 
-> Doble propósito: genera **la página de KORPO** (lead `noweb-korpo-centro-de-postura-y-rehabi-34aa53c6`,
-> contactado por WhatsApp el 15/09, respondió) y queda como **template maestro del nicho** para las
-> otras 81 clínicas de fisioterapia de Mendoza que están en cola.
+> **Template maestro del nicho** kinesiología/fisioterapia (Mendoza y alrededores).
+>
+> **Los datos de este archivo son ficticios a propósito: este repo es público.** El boceto de un
+> prospecto concreto se arma copiando este prompt a `clientes/<clinica>/PROMPT_BOCETO.md` y
+> reemplazando **ahí** el bloque `PROSPECTO` con los datos reales relevados de su ficha de Maps,
+> Instagram y Facebook. Nunca acá.
 > Pegar en Antigravity / Claude Code / Gemini con acceso a skills y 21st.dev.
-> Los datos del prospecto ya están cargados: se relevaron de su ficha de Maps, su Instagram y su
-> Facebook el 15/09/2026. Lo que quedó en `null` es lo que no existe públicamente — sale como
-> placeholder visible, nunca inventado.
 
 ---
 
@@ -27,28 +27,28 @@ esto.
 
 ```js
 const PROSPECTO = {
-  nombre_legal:  "KORPO Centro de Postura y Rehabilitación Deportiva",
-  nombre_corto:  "KORPO",
+  nombre_legal:  "Centro de Postura y Rehabilitación Ejemplo",   // ← FICTICIO
+  nombre_corto:  "Centro Ejemplo",                               // ← FICTICIO
   rating:        4.8,
-  resenas:       122,          // fuente: Google Maps, 15/09/2026
+  resenas:       90,            // ← FICTICIO. fuente real: Google Maps, fecha del relevamiento
   ciudad:        "Ciudad de Mendoza",
-  direccion:     "Agustín Alvarez 446, M5500, Ciudad de Mendoza",
-  // ⚠ CONFLICTO SIN RESOLVER: su Facebook dice "Salta 474 - Ciudad, Mendoza".
-  // Maps está actualizado (el dueño responde reseñas hace un mes), Facebook no publica desde 2021.
-  // Se usa la de Maps y se marca como "a confirmar" en el checklist final.
+  direccion:     "Calle Ejemplo 000, M5500, Ciudad de Mendoza",   // ← FICTICIO
+  // ⚠ Patrón real frecuente en el nicho: la dirección no coincide entre Maps y Facebook (el
+  // segundo no se actualiza hace años). Cuando pase, se usa la de Maps y se marca "a confirmar"
+  // en el checklist final.
 
   telefonos: {
-    fisioterapia: "+54 9 263 465-8148",   // el que figura en Maps y por el que se lo contactó
-    rpg:          "+54 9 261 507-0347",
-    atm:          "+54 9 261 209-3496",
+    fisioterapia: "+54 9 261 000-0001",   // ← FICTICIO. el que figura en Maps y por el que se lo contactó
+    rpg:          "+54 9 261 000-0002",   // ← FICTICIO
+    atm:          "+54 9 261 000-0003",   // ← FICTICIO
   },
-  whatsapp_principal: "5492634658148",     // para los links wa.me
+  whatsapp_principal: "5492610000001",     // ← FICTICIO, para los links wa.me
 
-  instagram:  "@korpo_rpg_fisio",          // 1.401 seguidores — hoy es su web de hecho
-  facebook:   "korpocentrodepostura",      // desactualizado desde 2021
-  email:      "licstellaruiz@gmail.com",
+  instagram:  "@centro_ejemplo_fisio",     // ← FICTICIO — hoy suele ser su web de hecho
+  facebook:   "centroejemplo",             // ← FICTICIO
+  email:      "hola@centro-ejemplo.com.ar",// ← FICTICIO
 
-  horarios:   null,                        // solo se conoce "cierra 19:30". [COMPLETAR]
+  horarios:   null,                        // [COMPLETAR]
 
   tratamientos: [
     "RPG — Reeducación Postural Global",
@@ -58,28 +58,22 @@ const PROSPECTO = {
     "ATM — disfunción temporomandibular",
   ],
 
-  equipo: [                                 // nombres mencionados por pacientes en reseñas reales
-    { nombre: "Juan Cruz",        matricula: null },
-    { nombre: "Gennaro",          matricula: null },
-    { nombre: "Claudia Lavarda",  matricula: null },
-    { nombre: "Cecilia Basualdo", matricula: null },
-    { nombre: "Lic. Stella Ruiz", matricula: null, nota: "posible dirección" },
+  equipo: [                                 // ← FICTICIO. en el prospecto real: nombres mencionados por pacientes en reseñas reales
+    { nombre: "Profesional Uno", matricula: null },
+    { nombre: "Profesional Dos", matricula: null },
   ],
 
   diferenciador: "Sesiones de una hora completa, cuando otros centros dan menos.",
-  // ↑ NO es marketing nuestro: lo dice una paciente, textual, en una reseña de hace un mes.
-  // Es el argumento más fuerte que tienen y no está escrito en ningún lado propio.
+  // ↑ Cuando exista, NO es marketing propio: lo dice un paciente, textual, en una reseña
+  // reciente. Es el argumento más fuerte que suelen tener y no está escrito en ningún lado propio.
 
   obras_sociales: null,                    // [COMPLETAR] — no figura en ninguna fuente pública.
 
-  resenas_texto: [                         // TEXTUALES de Google Maps. No reescribir ni corregir.
-    { autor: "Melisa Nieto", fecha: "hace un mes",
-      texto: "Recomiendo Korpo. Realizan una hora de sesión a diferencia de otros centros, cuando es necesario realizan masajes para aliviar dolor. Juan Cruz y Gennaro siempre atentos a la evolución. Escuchan al paciente. Gracias chicos!" },
-    { autor: "Elisabeth Paura", fecha: "hace 3 meses",
-      texto: "Es mi centro de rehabilitación de referencia, excelentes profesionales, calidez y un lugar muy cómodo. Felicitaciones!!!" },
-    { autor: "mariela lana", fecha: "hace 2 meses",
-      texto: "Son unos genios!! Me atiendo con Claudia Lavarda y c Juan Cruz y excelentes los 2, super recomendables!!" },
-    { autor: "—", fecha: "—", texto: "Excelente atención de parte de la doctora Cecilia Basualdo, muy recomendable." },
+  resenas_texto: [                         // ← FICTICIO. En el prospecto real: TEXTUALES de Google Maps, sin reescribir ni corregir.
+    { autor: "Paciente Uno", fecha: "hace un mes",
+      texto: "Recomiendo el centro. Realizan una hora de sesión a diferencia de otros lugares. Siempre atentos a la evolución. Escuchan al paciente." },
+    { autor: "Paciente Dos", fecha: "hace 3 meses",
+      texto: "Es mi centro de rehabilitación de referencia, excelentes profesionales, calidez y un lugar muy cómodo." },
   ],
 };
 ```
@@ -97,16 +91,16 @@ que quema la venta en el primer minuto.
 No son observaciones de color: son el argumento de venta y tienen que verse resueltos en el diseño.
 
 **1. Tres teléfonos distintos para tres servicios.** Su Instagram —que es su web de hecho— pide
-que el paciente elija entre `263 465-8148` (fisioterapia), `261 507-0347` (RPG) y `261 209-3496`
-(ATM) *antes* de saber cuál de los tres necesita. Nadie que llega con dolor de espalda sabe si
-eso es RPG o kinesiología. El que duda, no escribe.
+que el paciente elija entre el número de fisioterapia, el de RPG y el de ATM *antes* de saber
+cuál de los tres necesita. Nadie que llega con dolor de espalda sabe si eso es RPG o kinesiología.
+El que duda, no escribe.
 
 → La página resuelve esto con **un solo punto de entrada**: un CTA de WhatsApp, y el ruteo al
 número correcto lo hace la página según el tratamiento que el paciente elige, no el paciente
 según el número.
 
-**2. La dirección no coincide entre plataformas.** Maps dice Agustín Alvarez 446, Facebook dice
-Salta 474. Un paciente que googlea puede terminar en la puerta equivocada.
+**2. La dirección no coincide entre plataformas.** Maps dice una cosa, Facebook dice otra. Un
+paciente que googlea puede terminar en la puerta equivocada.
 
 → La página es la **fuente única de verdad**: una dirección, un mapa, un "cómo llegar". Es
 exactamente lo que una web hace y una ficha de Maps no.
@@ -172,11 +166,11 @@ Cada sección lleva su función CRO declarada en un comentario del código.
    - H1 con el servicio y el lugar: *"Kinesiología y rehabilitación en Ciudad de Mendoza"*.
    - Subtítulo con el diferenciador real: **la sesión de una hora completa**. Es lo único que los
      separa del resto y hoy no lo dice nadie más que sus pacientes.
-   - Badge de rating real: **4,8 ★ · 122 reseñas en Google**. Es el activo que hoy tienen preso en
-     Maps; acá es lo primero que se ve.
+   - Badge de rating real: **`PROSPECTO.rating` ★ · `PROSPECTO.resenas` reseñas en Google**. Es el
+     activo que hoy tienen preso en Maps; acá es lo primero que se ve.
    - Línea de cobertura visible sin scroll: *"Atendemos [obras sociales] y particular"*.
    - CTA primario: **un solo botón de WhatsApp**, con mensaje precargado
-     (`wa.me/5492634658148?text=Hola,%20quiero%20sacar%20un%20turno`).
+     (`wa.me/{PROSPECTO.whatsapp_principal}?text=Hola,%20quiero%20sacar%20un%20turno`).
    - CTA secundario: llamar.
 3. **Franja de obras sociales** — inmediatamente después del hero, nombres en texto legible (no
    logos pixelados), y una línea honesta para el caso particular: valor de sesión o "consultanos".
@@ -287,8 +281,8 @@ larguísimo, 4 tratamientos u 9, 2 kinesiólogos o 6.
 
 Tres pruebas, las tres obligatorias:
 
-1. **El dueño** la abre en el celular y en 3 segundos ve su nombre, su 4,8 con 122 reseñas y un
-   botón de WhatsApp que escribe de verdad a su número.
+1. **El dueño** la abre en el celular y en 3 segundos ve su nombre, su rating con su cantidad de
+   reseñas y un botón de WhatsApp que escribe de verdad a su número.
 2. **Un paciente con orden médica** averigua si le cubren la obra social sin scrollear más de una
    pantalla, y saca el turno en dos toques.
 3. **Vos** la convertís en la landing de otra clínica de Mendoza editando solo `PROSPECTO`, en
