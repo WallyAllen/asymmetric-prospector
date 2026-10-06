@@ -56,6 +56,46 @@ Todas las etapas son **idempotentes y reanudables**: puedes cortar con Ctrl+C y
 retomar sin duplicar trabajo ni volver a gastar en IA. Los antiguos
 `scripts/0X_*.py` siguen funcionando: ahora son alias de estos comandos.
 
+## Campaña de indumentaria
+
+Desde la carpeta `Prospector`, en PowerShell:
+
+```powershell
+.\scripts\venv\Scripts\python.exe -m prospector mine "tiendas de ropa La Plata" --max 20
+.\scripts\venv\Scripts\python.exe -m prospector audit --nicho "tiendas de ropa La Plata" --limite 20 --sin-ia
+.\scripts\venv\Scripts\python.exe -m prospector compose --nicho "tiendas de ropa La Plata" --sin-ia
+.\scripts\venv\Scripts\python.exe -m prospector report --nicho "tiendas de ropa La Plata"
+.\scripts\venv\Scripts\python.exe -m prospector send --nicho "tiendas de ropa La Plata" --limite 5
+```
+
+El último comando **simula**. `--nicho` compara parte de la búsqueda guardada,
+sin distinguir tildes, mayúsculas ni espacios repetidos. También funciona en
+`enrich`, `status` y el envío semi-manual `scripts/send_whatsapp.py --nicho "ropa"`.
+Las búsquedas siguen en el mismo almacén; filtrar no elimina
+ni modifica los leads de otros nichos. `run` limita las etapas posteriores a su
+consulta. `audit --limite N` toma N pendientes del nicho, después de aplicar
+los criterios de reanudación. Para actualizar auditorías o borradores anteriores,
+usar `--forzar` junto al filtro.
+
+Las tiendas en subdominios de `myshopify.com`, `mitiendanube.com` y
+`empretienda.com.ar` conservan su dominio propio al buscar y deduplicar.
+Shopify no se descarta por ser una plataforma. Al minar otra vez una tienda
+ya guardada se conserva su id histórico; esto no reconstruye tiendas que se
+hayan perdido por colisiones de ids en tandas anteriores.
+
+La revisión de ropa registra indicios de catálogo con WhatsApp o tienda online,
+abre en móvil un enlace publicado de producto y otro de carrito cuando reconoce
+sus rutas, y conserva capturas. Solo un HTTP 404/410 repetido se convierte en
+un hallazgo de enlace roto. Bloqueos, timeouts y rutas desconocidas quedan sin
+diagnóstico; la plataforma usada y la ausencia de selectores no suman puntos.
+
+**Alcance:** es una precalificación, no una compra probada. Elegir talle/color,
+confirmar stock, agregar al carrito, calcular envío y avanzar al checkout quedan
+pendientes en el informe para revisión funcional. No se crean pedidos ni pagos.
+Las previews e índices de mensajes conservan la cola global: el filtro de envío
+se aplica sobre el JSON, no sobre esos índices. El informe filtrado se escribe
+en `data/informe.html`.
+
 ## Cómo decide qué lead vale la pena
 
 El score (0-100, más alto = más oportunidad) **no lo pone la IA**: lo suman reglas

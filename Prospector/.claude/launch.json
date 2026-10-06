@@ -4,21 +4,124 @@
     {
       "name": "libra-propiedades",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "../Landing/nichos/inmobiliarias/landings/libra-propiedades", "run", "dev"],
+      "runtimeArgs": [
+        "--prefix",
+        "../clientes/libra-propiedades",
+        "run",
+        "dev"
+      ],
       "port": 3000
     },
     {
-      "name": "monte-studio",
+      "name": "rodriguez-inmobiliaria",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "../clientes/monte-propiedades/studio", "run", "dev"],
-      "port": 3333,
-      "url": "http://127.0.0.1:3333"
+      "runtimeArgs": [
+        "--prefix",
+        "../clientes/rodriguez-inmobiliaria",
+        "run",
+        "dev"
+      ],
+      "port": 3000
     },
     {
       "name": "estudio-jimena-garcia",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "5178", "--directory", "../clientes/estudio-contable-jimena-garcia"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5178",
+        "--directory",
+        "../clientes/estudio-contable-jimena-garcia"
+      ],
       "port": 5178
+    },
+    {
+      "name": "monte-studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../clientes/monte-propiedades/studio",
+        "run",
+        "dev"
+      ],
+      "port": 3333,
+      "url": "http://127.0.0.1:3333"
+    },
+    {
+      "name": "lincoln-park",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5179",
+        "--directory",
+        "../clientes/lincoln-park"
+      ],
+      "port": 5179
+    },
+    {
+      "name": "el-chaca",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../clientes/el-chaca/sitio",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "4321"
+      ],
+      "port": 4321
+    },
+    {
+      "name": "el-chaca-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../clientes/el-chaca/sitio",
+        "run",
+        "preview",
+        "--",
+        "--port",
+        "4331"
+      ],
+      "port": 4331
+    },
+    {
+      "name": "el-chaca-preview-2",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4341",
+        "--directory",
+        "../clientes/el-chaca/sitio/dist"
+      ],
+      "port": 4341
+    },
+    {
+      "name": "el-chaca-preview-3",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4351",
+        "--directory",
+        "../clientes/el-chaca/sitio/dist"
+      ],
+      "port": 4351
+    },
+    {
+      "name": "el-chaca-gzip",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "-y",
+        "serve@14",
+        "../clientes/el-chaca/sitio/dist",
+        "-l",
+        "4361"
+      ],
+      "port": 4361
     }
   ]
 }

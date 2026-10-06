@@ -9,7 +9,7 @@ from ..config import DESKTOP_VIEWPORT, SHOTS_DIR, Settings
 from ..logging_setup import get_logger
 from ..models import Audit, Lead
 from ..storage import to_relative
-from ..utils import registrable_domain, slugify
+from ..utils import es_indumentaria, negocio_domain, slugify
 from . import rules
 from .capture import anotar, anotar_overflow_movil
 from .signals import ProbeResult, SiteProbe
@@ -23,12 +23,15 @@ log = get_logger("auditor")
 
 
 def _slug(lead: Lead) -> str:
-    return slugify(registrable_domain(lead.url) or lead.nombre or lead.id)
+    return slugify(negocio_domain(lead.url) or lead.nombre or lead.id)
 
 
 def _auditar_sin_web(lead: Lead) -> Lead:
     hallazgo = rules.finding_sin_web(lead.nombre or "El negocio")
     lead.audit = Audit(score=100, veredicto="sin_web", findings=[hallazgo])
+    if es_indumentaria(lead.nicho):
+        lead.audit.tienda = {"tipo": "sin_web_enlazada", "pendientes": [
+            "Confirmar si vende por redes o tiene una tienda no enlazada en Maps"]}
     lead.estado = "auditado"
     log.info("★ %s · sin web → prospecto de máximo valor", lead.etiqueta)
     return lead
@@ -59,6 +62,7 @@ def _aplicar_resultado(lead: Lead, res: ProbeResult, cfg: Settings) -> Lead:
         findings=hallazgos,
         metrics=res.metrics,
         capturas={k: to_relative(v) or "" for k, v in res.capturas.items()},
+        tienda=res.tienda,
     )
     lead.audit = auditoria
     lead.estado = "auditado"
@@ -179,6 +183,8 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
 
     # Eliminar capturas originales duplicadas para ahorrar espacio
     for clave, ruta_abs in res.capturas.items():
+        if clave.startswith("tienda_"):
+            continue
         if clave not in ("anotada", "anotada_movil", "principal"):
             try:
                 Path(ruta_abs).unlink(missing_ok=True)
@@ -190,7 +196,7 @@ def _jurado_y_anotacion(lead: Lead, res: ProbeResult, cfg: Settings) -> None:
 
 async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False,
                   solo_veredicto: str | None = None, reanudar: bool = False,
-                  on_progreso=None) -> list[Lead]:
+                  on_progreso=None, limite: int | None = None) -> list[Lead]:
     """Audita los leads pendientes. Idempotente: no repite trabajo ya hecho.
 
     `solo_veredicto` re-mide únicamente los que quedaron con ese veredicto.
@@ -227,6 +233,8 @@ async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False,
             lead for lead in leads
             if forzar or lead.audit is None or lead.estado == "crudo"
         ]
+    if limite is not None:
+        pendientes = pendientes[:max(0, limite)]
     if not pendientes:
         log.info("No hay leads pendientes de auditar")
         return leads
@@ -263,7 +271,7 @@ async def auditar(leads: list[Lead], cfg: Settings, forzar: bool = False,
         """
         nonlocal terminados
         async with semaforo:
-            res = await probe.probe(lead.url, slug=_slug(lead))
+            res = await probe.probe(lead.url, slug=_slug(lead), tienda=es_indumentaria(lead.nicho))
         # Un lead que vuelve a medirse sale del descarte si ahora califica.
         if lead.estado == "descartado" and (solo_veredicto or reanudar):
             lead.estado = "auditado"

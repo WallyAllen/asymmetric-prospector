@@ -15,6 +15,7 @@ from .logging_setup import get_logger
 from .models import Lead
 from .sources import enrich_contacts, mine_google_maps, mine_search_engine
 from .storage import load_leads, merge_leads, save_leads
+from .utils import coincide_nicho, negocio_domain, registrable_domain
 
 log = get_logger("pipeline")
 
@@ -42,6 +43,15 @@ def minar(query: str, cfg: Settings = settings, fuente: str = "maps", enriquecer
     if not cfg.mining.include_without_site:
         nuevos = [lead for lead in nuevos if lead.url]
 
+    # Conservar ids históricos: el cambio de identidad de subdominios no
+    # debe crear otra fila para una tienda ya conocida ni perder su estado.
+    existentes = load_leads(RAW_FILE)
+    ids_tiendas = {negocio_domain(l.url): l.id for l in existentes
+                   if negocio_domain(l.url) != registrable_domain(l.url)}
+    for lead in nuevos:
+        if negocio_domain(lead.url) in ids_tiendas:
+            lead.id = ids_tiendas[negocio_domain(lead.url)]
+
     quiere_enriquecer = cfg.mining.fetch_contacts if enriquecer is None else enriquecer
     if quiere_enriquecer:
         # Guardar los leads que ya llegaron ANTES de enriquecer,
@@ -66,7 +76,7 @@ def minar(query: str, cfg: Settings = settings, fuente: str = "maps", enriquecer
     return leads
 
 
-def enriquecer_contactos(cfg: Settings = settings) -> list[Lead]:
+def enriquecer_contactos(cfg: Settings = settings, nicho: str | None = None) -> list[Lead]:
     """Segunda pasada de contacto sobre lo ya minado."""
     ensure_dirs()
     leads = load_leads(RAW_FILE)
@@ -76,7 +86,8 @@ def enriquecer_contactos(cfg: Settings = settings) -> list[Lead]:
         # corte de red) se pierde CADA email ya encontrado hasta ese momento.
         save_leads(RAW_FILE, merge_leads(load_leads(RAW_FILE), leads_actuales))
 
-    asyncio.run(enrich_contacts(leads, cfg.mining, on_lead_done=_guardar_progreso))
+    objetivo = [l for l in leads if coincide_nicho(l.nicho, nicho)]
+    asyncio.run(enrich_contacts(objetivo, cfg.mining, on_lead_done=_guardar_progreso))
     save_leads(RAW_FILE, leads)
     _resumen(leads, "Enriquecido")
     return leads
@@ -85,23 +96,24 @@ def enriquecer_contactos(cfg: Settings = settings) -> list[Lead]:
 # ─────────────────────────────── Etapa 2 ───────────────────────────────
 
 def auditar_leads(cfg: Settings = settings, forzar: bool = False, limite: int | None = None,
-                  solo_veredicto: str | None = None, reanudar: bool = False) -> list[Lead]:
+                  solo_veredicto: str | None = None, reanudar: bool = False,
+                  nicho: str | None = None) -> list[Lead]:
     ensure_dirs()
     crudos = load_leads(RAW_FILE)
     auditados = load_leads(AUDITED_FILE)
     leads = merge_leads(auditados, crudos)
 
     # Preservamos el trabajo previo: merge_leads da prioridad al lead ya auditado.
-    objetivo = leads if limite is None else leads[:limite]
+    objetivo = [l for l in leads if coincide_nicho(l.nicho, nicho)]
     def guardar(_parcial) -> None:
         save_leads(AUDITED_FILE, leads)
 
     asyncio.run(auditar(objetivo, cfg, forzar=forzar, solo_veredicto=solo_veredicto,
-                        reanudar=reanudar, on_progreso=guardar))
+                        reanudar=reanudar, on_progreso=guardar, limite=limite))
 
     save_leads(AUDITED_FILE, leads)
-    _resumen(leads, "Auditoría")
-    calificados = [l for l in leads if l.estado == "auditado" and l.audit]
+    _resumen(objetivo, "Auditoría")
+    calificados = [l for l in objetivo if l.estado == "auditado" and l.audit]
     if calificados:
         mejor = max(calificados, key=lambda l: l.audit.score)
         log.info("  Mejor oportunidad: %s (score %d)", mejor.etiqueta, mejor.audit.score)
@@ -110,10 +122,12 @@ def auditar_leads(cfg: Settings = settings, forzar: bool = False, limite: int | 
 
 # ─────────────────────────────── Etapa 3 ───────────────────────────────
 
-def redactar_correos(cfg: Settings = settings, forzar: bool = False) -> list[Lead]:
+def redactar_correos(cfg: Settings = settings, forzar: bool = False,
+                    nicho: str | None = None) -> list[Lead]:
     ensure_dirs()
     leads = merge_leads(load_leads(COMPOSED_FILE), load_leads(AUDITED_FILE))
-    for lead in leads:
+    objetivo = [l for l in leads if coincide_nicho(l.nicho, nicho)]
+    for lead in objetivo:
         if (lead.audit and lead.audit.score < cfg.audit.min_score
                 and lead.estado in {"auditado", "listo", "listo_whatsapp", "descartado"}):
             lead.email_draft = None
@@ -121,21 +135,23 @@ def redactar_correos(cfg: Settings = settings, forzar: bool = False) -> list[Lea
             lead.motivo_descarte = (
                 f"score {lead.audit.score} por debajo del umbral {cfg.audit.min_score}"
             )
-    redactar_todos(leads, cfg, forzar=forzar)
-    redactar_whatsapp(leads, cfg, forzar=forzar)
+    redactar_todos(objetivo, cfg, forzar=forzar)
+    redactar_whatsapp(objetivo, cfg, forzar=forzar)
     exportar_preview(leads)
     exportar_whatsapp(leads)
     save_leads(COMPOSED_FILE, leads)
-    _resumen(leads, "Redacción")
+    _resumen(objetivo, "Redacción")
     return leads
 
 
 # ─────────────────────────────── Etapa 4 ───────────────────────────────
 
-def enviar_correos(cfg: Settings = settings, simular: bool = True, limite: int | None = None) -> list[Lead]:
+def enviar_correos(cfg: Settings = settings, simular: bool = True, limite: int | None = None,
+                   nicho: str | None = None) -> list[Lead]:
     ensure_dirs()
     leads = load_leads(COMPOSED_FILE)
-    enviar(leads, cfg, simular=simular, limite=limite)
+    objetivo = [l for l in leads if coincide_nicho(l.nicho, nicho)]
+    enviar(objetivo, cfg, simular=simular, limite=limite)
     save_leads(COMPOSED_FILE, leads)
     return leads
 
@@ -151,6 +167,6 @@ def ejecutar_todo(
 ) -> list[Lead]:
     log.info("═══ Prospección completa para: %s ═══", query)
     minar(query, cfg, fuente=fuente)
-    auditar_leads(cfg)
-    redactar_correos(cfg)
-    return enviar_correos(cfg, simular=simular, limite=limite_envio)
+    auditar_leads(cfg, nicho=query)
+    redactar_correos(cfg, nicho=query)
+    return enviar_correos(cfg, simular=simular, limite=limite_envio, nicho=query)

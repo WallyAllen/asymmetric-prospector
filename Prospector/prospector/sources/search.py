@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, urlparse
 
 from ..logging_setup import get_logger
 from ..models import Lead
-from ..utils import is_directory, normalize_url, registrable_domain
+from ..utils import is_directory, normalize_url, negocio_domain
 
 log = get_logger("buscador")
 
@@ -42,7 +42,7 @@ def mine_search_engine(query: str, cfg, paginas: int = 2) -> list[Lead]:
             url = normalize_url(_unwrap(href or ""))
             if not url or is_directory(url):
                 continue
-            dominio = registrable_domain(url)
+            dominio = negocio_domain(url)
             if not dominio or dominio in encontrados:
                 continue
             # Nos quedamos con la home: es lo que auditaremos.

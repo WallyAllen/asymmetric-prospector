@@ -26,6 +26,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from typing import Sequence
+from ..utils import es_indumentaria
 
 
 # ─────────────────────────────── Elección determinista ───────────────────────────────
@@ -80,6 +81,13 @@ GENERICO = Rubro(
     accion="ponerse en contacto",
     no_ve="qué hacen ni cómo contactarlos",
     cliente="el que los busca",
+)
+
+INDUMENTARIA = Rubro(
+    plural="tiendas de ropa",
+    accion="elegir una prenda y hacer un pedido",
+    no_ve="las prendas, los talles disponibles ni cómo hacer un pedido",
+    cliente="el que está buscando ropa",
 )
 
 # Se recorre en orden: la primera clave contenida en el nicho gana. Por eso las
@@ -149,15 +157,20 @@ _RUBROS: tuple[tuple[tuple[str, ...], Rubro], ...] = (
 )
 
 
-def rubro_de(nicho: str | None) -> Rubro:
+def rubro_de(nicho: str | None, nombre: str = "") -> Rubro:
     """El vocabulario del rubro, o el genérico si no se reconoce.
 
     Degradación elegante a propósito: un nicho nuevo no rompe la redacción,
     solo la deja tan genérica como estaba antes de existir este módulo.
     """
     texto = _plano(nicho or "")
+    if es_indumentaria(nicho or ""):
+        return INDUMENTARIA
     for claves, rubro in _RUBROS:
         if any(clave in texto for clave in claves):
+            if "contable" in claves and re.search(r"\b(asociados|srl|s\.r\.l|sa|s\.a)\b", _plano(nombre)):
+                return Rubro(rubro.plural, rubro.accion, rubro.no_ve,
+                             "la empresa que necesita llevar la contabilidad al día")
             return rubro
     return GENERICO
 

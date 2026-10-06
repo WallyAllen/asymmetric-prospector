@@ -104,7 +104,7 @@ def _presentacion(lead: Lead, cfg: ComposeSettings) -> str:
 
 def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
     """Un mensaje pensado para el celular del dueño, no un correo reenviado."""
-    rubro = rubro_de(lead.nicho)
+    rubro = rubro_de(lead.nicho, nombre=lead.nombre)
     busqueda = busqueda_de(lead.nicho)
     dominio = dominio_de(lead)
     dialecto = dialecto_por_url(lead.url)
@@ -122,7 +122,8 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
         fuga = elegir(FUGAS_SIN_WEB, lead.id, "fuga").format(
             Cliente=mayuscula_inicial(rubro.cliente), accion=rubro.accion)
         cuerpo_medio = f"{apertura}{dato} {fuga}"
-        oferta = elegir(OFERTAS_SIN_WEB, lead.id, "oferta_wa")
+        oferta = ("Te armo un boceto de un catálogo con prendas, talles y pedidos para revisar en WhatsApp."
+                  if rubro.plural == "tiendas de ropa" else elegir(OFERTAS_SIN_WEB, lead.id, "oferta_wa"))
     elif inaccesible:
         cuerpo_medio = (
             f"Quise entrar a {dominio} buscando {busqueda} y no cargó, probé dos veces. "
@@ -145,7 +146,8 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
         cuerpo_medio = f"{apertura} {observacion}."
         if consecuencia:
             cuerpo_medio += f" {mayuscula_inicial(consecuencia).rstrip('.')}."
-        oferta = elegir(OFERTAS_CON_WEB, lead.id, "oferta_wa")
+        oferta = ("Puedo mostrarte un boceto para facilitar la elección de prendas y el pedido."
+                  if rubro.plural == "tiendas de ropa" else elegir(OFERTAS_CON_WEB, lead.id, "oferta_wa"))
 
     cierre = elegir(CIERRES_CON_BOCETO, lead.id, "cierre_wa")
     if inaccesible:
