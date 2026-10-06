@@ -46,3 +46,6 @@ Prospector/.claude/settings.local.json
 
 # Playwright y Scrapling caches locales
 .playwright/
+
+# Boveda privada de contexto, clientes y aprendizajes
+/Obsidian Vault/
