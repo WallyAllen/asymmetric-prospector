@@ -122,6 +122,18 @@
         "4361"
       ],
       "port": 4361
+    },
+    {
+      "name": "portillo-kus",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8532",
+        "--directory",
+        "../clientes/portillo-kus/dist"
+      ],
+      "port": 8532
     }
   ]
 }
