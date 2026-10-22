@@ -134,6 +134,18 @@
         "../clientes/portillo-kus/dist"
       ],
       "port": 8532
+    },
+    {
+      "name": "roma-propiedades",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../clientes/roma-propiedades",
+        "run",
+        "dev"
+      ],
+      "port": 3094,
+      "url": "http://127.0.0.1:3094"
     }
   ]
 }
