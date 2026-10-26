@@ -304,6 +304,9 @@ CONSECUENCIA_INMOBILIARIA = {
 }
 
 # La oferta nombra lo que se arregla; "esa pantalla" no dice nada.
+# En las fallas de contacto la oferta muestra lo que hace el sistema detrás de la
+# web (la consulta que llega con la propiedad, la tasación que queda anotada) sin
+# decir "sistema": la palabra la leen como "otro CRM" y contestan "ya tenemos".
 OFERTA = {
     "carga_lenta": (
         "Te armo un boceto de esa misma portada cargando rápido.",
@@ -311,12 +314,13 @@ OFERTA = {
         "Te muestro en un boceto cómo sería esa portada sin la espera.",
     ),
     "sin_contacto": (
-        "Te armo un boceto de la portada con la consulta a un toque.",
-        "Te hago un boceto de cómo quedaría con un botón de WhatsApp a la vista.",
+        "Te armo un boceto donde la consulta te llega al WhatsApp con la propiedad que miraban.",
+        "Te hago un boceto con un botón de tasación que te deja los datos del que quiere vender.",
+        "Te armo un boceto con WhatsApp en cada propiedad: la consulta llega con la ficha.",
     ),
     "sin_tel_movil": (
-        "Te armo un boceto de cómo se vería en el celu con un botón de WhatsApp.",
-        "Te hago un boceto de esa misma web con la consulta por WhatsApp a un toque.",
+        "Te armo un boceto con WhatsApp en cada propiedad: la consulta llega diciendo cuál es.",
+        "Te hago un boceto donde la consulta te llega al WhatsApp con la propiedad que miraban.",
     ),
     "overflow_mobile": (
         "Te armo un boceto de cómo se vería bien en el celu.",
