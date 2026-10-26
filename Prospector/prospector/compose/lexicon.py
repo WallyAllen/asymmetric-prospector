@@ -114,7 +114,10 @@ _RUBROS: tuple[tuple[tuple[str, ...], Rubro], ...] = (
         accion="preguntar por horarios y precios",
         no_ve="los cursos, los horarios ni cuánto sale",
         cliente="el que está buscando dónde anotarse")),
-    (("inmobiliaria", "propiedades", "bienes raices"), Rubro(
+    # "tasaciones" es como se buscó a las inmobiliarias de Tigre, Pilar y Mar del
+    # Plata: sin la clave caían en el rubro genérico ("hago webs para servicios
+    # de la zona") y no recibían los textos del toque 1 para inmobiliarias.
+    (("inmobiliaria", "propiedades", "bienes raices", "tasacion"), Rubro(
         plural="inmobiliarias",
         accion="consultar por una propiedad",
         no_ve="las propiedades ni cómo consultar por una",

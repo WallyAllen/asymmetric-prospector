@@ -108,6 +108,10 @@ class TestTexto(unittest.TestCase):
                 self.assertNotIn("ponerse en contacto", medio)
                 self.assertRegex(medio.lower(), r"casa|propiedad|propietario|inmobiliaria")
 
+    def test_tasaciones_es_inmobiliaria(self):
+        cuerpo = _cuerpo(_lead(_f("sin_contacto"), nicho="tasaciones tigre"))
+        self.assertIn("inmobiliarias", _bloques(cuerpo)[0])
+
     def test_otro_rubro_usa_consecuencia_de_rules(self):
         lead = _lead(_f("sin_contacto"), nicho="veterinarias la plata")
         self.assertIn("El que los busca se va sin ponerse en contacto", _cuerpo(lead))
