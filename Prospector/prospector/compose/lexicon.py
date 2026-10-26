@@ -214,3 +214,121 @@ def busqueda_de(nicho: str | None) -> str:
     rubro = rubro_de(nicho)
     ciudad = ciudad_de(nicho)
     return f"{rubro.plural} en {ciudad}" if ciudad else rubro.plural
+
+
+# ─────────────────────────────── Toque 1 por WhatsApp: inmobiliarias ───────────────────────────────
+# Spec 009. La v4 (125 mensajes en cola) abría describiendo la portada, cerraba
+# preguntando qué sistema usaban y tres rechazos contestaron "ya tenemos CRM":
+# la pregunta les servía de salida. Acá lidera una falla que se comprueba
+# abriendo la web, y la consecuencia está escrita para una inmobiliaria.
+# `{v}`/`{vc}` salen de VERBO/VERBO_CELU, `{d}` es el dominio, `{s}` los segundos.
+
+VERBO = ("Entré a {d}", "Abrí {d}", "Miré {d}")
+VERBO_CELU = ("Entré a {d} desde el celu", "Abrí {d} en el celu", "Miré {d} desde el celular")
+
+SALUDOS_V5 = ("Hola, ¿qué tal?", "Hola, buenas.", "Hola, ¿cómo va?", "Buenas, ¿qué tal?")
+PRESENTACIONES_V5 = (
+    "Soy {nombre}, hago webs para {plural}.",
+    "Soy {nombre} y armo webs para {plural}.",
+    "Te escribo por algo puntual. Soy {nombre}, hago webs para {plural}.",
+    "Me llamo {nombre} y trabajo haciendo webs de {plural}.",
+    "Soy {nombre}, diseño webs para {plural}.",
+)
+
+OBSERVACION = {
+    "carga_lenta": (
+        "{v} y tardó {s} segundos en mostrar algo.",
+        "{v} y la portada tardó {s} segundos en aparecer, con una conexión normal.",
+        "{v}: {s} segundos hasta que se ve la portada.",
+    ),
+    "sin_contacto": (
+        "{v} y no encontré cómo consultar: no hay formulario, ni teléfono para tocar, ni WhatsApp.",
+        "{v} y no hay forma de consultar desde la web: ni WhatsApp, ni teléfono para tocar, ni formulario.",
+    ),
+    "sin_tel_movil": (
+        "{vc} y la única forma de consultar es un formulario: no hay WhatsApp ni teléfono para tocar.",
+        "{vc} y para consultar hay que llenar un formulario; no hay botón de WhatsApp ni de llamar.",
+    ),
+    "overflow_mobile": (
+        "{vc} y la página se sale de la pantalla: hay que arrastrar para los costados para leer.",
+        "{vc} y queda más ancha que la pantalla, así que se lee cortada.",
+    ),
+    "sin_viewport": (
+        "{vc} y se ve la web de la compu en miniatura: hay que hacer zoom para leer.",
+        "{vc} y aparece la versión de escritorio achicada; sin zoom no se lee.",
+    ),
+    "popup_intrusivo": (
+        "{v} y lo primero que aparece es un aviso que tapa la pantalla y hay que cerrar.",
+    ),
+    "sitio_inaccesible": (
+        "Quise entrar a {d} y no cargó, probé dos veces.",
+    ),
+}
+
+# El que más pesa para una inmobiliaria es el propietario que quiere vender: llega
+# recomendado y mira la web antes de llamar. El comprador consulta en el portal.
+CONSECUENCIA_INMOBILIARIA = {
+    "carga_lenta": (
+        "El propietario que te recomendaron entra a mirarte antes de llamar, y lo primero que ve es la espera.",
+        "El que busca casa tiene diez pestañas abiertas y cierra la que tarda.",
+        "En ese tiempo, el que estaba mirando una propiedad ya volvió atrás.",
+        "El que está eligiendo a quién darle su casa para vender compara dos o tres webs, y la que tarda queda última.",
+    ),
+    "sin_contacto": (
+        "El que ve una casa que le gusta tiene que salir a buscar tu número, y casi siempre lo deja para después.",
+        "El propietario que te recomendaron entra a mirarte y no tiene cómo escribirte desde ahí.",
+    ),
+    "sin_tel_movil": (
+        "El que mira casas desde el celu quiere escribir por WhatsApp y listo; un formulario lo deja para después.",
+        "El que encontró la casa que buscaba quiere preguntar ya, y un formulario lo enfría.",
+    ),
+    "overflow_mobile": (
+        "Casi todo el que busca casa lo hace desde el celu, y lo ve roto en los primeros segundos.",
+        "El propietario que te recomendaron entra a mirarte desde el celu y se lleva esa imagen.",
+    ),
+    "sin_viewport": (
+        "Casi todo el que busca casa lo hace desde el celu, y nadie hace zoom para leer una ficha.",
+        "El propietario que te recomendaron entra a mirarte desde el celu y se lleva esa imagen.",
+    ),
+    "popup_intrusivo": (
+        "El que entra a ver propiedades tiene que sacarse eso de encima antes de ver una sola casa.",
+        "La primera impresión de la inmobiliaria termina siendo un cartel que estorba.",
+    ),
+    "sitio_inaccesible": (
+        "El que te busca y se encuentra con eso no vuelve a probar: entra al siguiente resultado.",
+        "El propietario que te recomendaron te busca para chequearte y termina llamando a la otra que le nombraron.",
+    ),
+}
+
+# La oferta nombra lo que se arregla; "esa pantalla" no dice nada.
+OFERTA = {
+    "carga_lenta": (
+        "Te armo un boceto de esa misma portada cargando rápido.",
+        "Te hago un boceto de cómo quedaría esa portada, liviana.",
+        "Te muestro en un boceto cómo sería esa portada sin la espera.",
+    ),
+    "sin_contacto": (
+        "Te armo un boceto de la portada con la consulta a un toque.",
+        "Te hago un boceto de cómo quedaría con un botón de WhatsApp a la vista.",
+    ),
+    "sin_tel_movil": (
+        "Te armo un boceto de cómo se vería en el celu con un botón de WhatsApp.",
+        "Te hago un boceto de esa misma web con la consulta por WhatsApp a un toque.",
+    ),
+    "overflow_mobile": (
+        "Te armo un boceto de cómo se vería bien en el celu.",
+        "Te hago un boceto de esa portada adaptada al celular.",
+    ),
+    "sin_viewport": (
+        "Te armo un boceto de cómo se vería bien en el celu.",
+        "Te hago un boceto de esa portada adaptada al celular.",
+    ),
+    "popup_intrusivo": (
+        "Te armo un boceto de la portada sin ese aviso, mostrando las propiedades de entrada.",
+    ),
+}
+
+# Siete y no cinco: con cinco, el cierre era la oración más repetida del corpus (26 %).
+CIERRE = ("¿Te lo paso?", "¿Te lo mando?", "¿Querés verlo?", "Es sin cargo, ¿te lo paso?",
+          "¿Te sirve que te lo pase?", "¿Lo querés ver?", "Si te sirve, ¿te lo mando?")
+CIERRE_INACCESIBLE = ("Si querés te paso qué error me apareció, ¿te sirve?",)

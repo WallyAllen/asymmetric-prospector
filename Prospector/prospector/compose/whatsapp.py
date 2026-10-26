@@ -27,15 +27,60 @@ imagen no llega, y no hay forma de prometer una marca que no está.
 """
 from __future__ import annotations
 
+from datetime import date
+
 from ..config import ComposeSettings
 from ..logging_setup import get_logger
-from ..models import EmailDraft, Lead
+from ..models import EmailDraft, Finding, Lead
 from ..utils import dialecto_por_url
-from .lexicon import busqueda_de, elegir, rubro_de
-from .writer import (dominio_de, frase_prueba, hallazgos_de, limpiar,
-                     mayuscula_inicial, minuscula_inicial, reputacion, validar)
+from .lexicon import (CIERRE, CIERRE_INACCESIBLE, CONSECUENCIA_INMOBILIARIA, GENERICO,
+                      OBSERVACION, OFERTA, PRESENTACIONES_V5, SALUDOS_V5, VERBO,
+                      VERBO_CELU, busqueda_de, elegir, rubro_de)
+from .writer import (dominio_de, frase_prueba, limpiar, mayuscula_inicial,
+                     minuscula_inicial, reputacion, validar)
 
 log = get_logger("whatsapp-redactor")
+
+VERSION = "plantilla-whatsapp-v5"
+
+# Spec 009. Solo lidera lo que el prospecto comprueba abriendo su web. Quedan
+# afuera el LCP de 2,5 a 4 s (no se nota), el texto chico y los tap targets
+# (hay que medirlos), y `sin_cta_fold`: en una inmobiliaria el buscador hace de
+# botón, el auditor no lo cuenta, y "no hay ningún botón" puede ser falso.
+REGLAS_TOQUE1 = ("carga_lenta", "sin_contacto", "sin_tel_movil", "overflow_mobile",
+                 "sin_viewport", "popup_intrusivo", "sitio_inaccesible")
+
+# El mensaje afirma algo que el prospecto comprueba hoy. Al 26/10, 135 de las
+# 244 inmobiliarias con web de la cola tenían la auditoría de hace 21-27 días:
+# un "no cargó" de hace tres semanas puede ser falso, y quema el contacto.
+MAX_DIAS_AUDITORIA = 14
+
+_SIN_TILDE = str.maketrans("áéíóúÁÉÍÓÚüÜ", "aeiouAEIOUuU", "¿¡")
+
+
+def estilo_felipe(texto: str) -> str:
+    """Sin tildes y sin «¿» ni «¡», como escribe Felipe en el celular. La ñ queda."""
+    return texto.translate(_SIN_TILDE)
+
+
+def regla_toque1(lead: Lead) -> Finding | None:
+    """El primer hallazgo argumentable que se comprueba abriendo la web."""
+    for hallazgo in (lead.audit.argumentables if lead.audit else []):
+        if hallazgo.rule_id not in REGLAS_TOQUE1:
+            continue
+        if hallazgo.rule_id == "carga_lenta" and hallazgo.categoria != "killer":
+            continue
+        return hallazgo
+    return None
+
+
+def _auditoria_vieja(lead: Lead, hoy: date) -> bool:
+    try:
+        auditado = date.fromisoformat((lead.audit.auditado_el or "")[:10])
+    except (AttributeError, ValueError):
+        return True
+    return (hoy - auditado).days > MAX_DIAS_AUDITORIA
+
 
 SALUDOS = (
     "Hola, ¿qué tal?",
@@ -96,24 +141,44 @@ APERTURAS_CON_WEB = (
 )
 
 
-def _presentacion(lead: Lead, cfg: ComposeSettings) -> str:
+def _presentacion(lead: Lead, cfg: ComposeSettings, plural: str | None = None) -> str:
+    # Con rubro reconocido, la presentación nombra el rubro ("hago webs para
+    # inmobiliarias") en vez del pitch configurado, que en la v4 decía "webs y
+    # sistemas" y abría la puerta al "ya tenemos sistema".
+    if plural:
+        marco = elegir(PRESENTACIONES_V5, lead.id, "presentacion")
+        return marco.format(nombre=cfg.sender_name, plural=plural)
     pitch = (cfg.sender_pitch or "armo páginas web").strip().rstrip(".")
     marco = elegir(PRESENTACIONES, lead.id, "presentacion")
     return marco.format(nombre=cfg.sender_name, pitch=pitch, Pitch=mayuscula_inicial(pitch))
 
 
+def _segundos(lead: Lead) -> str:
+    lcp = (lead.audit.metrics.lcp_ms or 0) / 1000 if lead.audit else 0
+    return f"{lcp:.1f}".replace(".", ",")
+
+
 def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
-    """Un mensaje pensado para el celular del dueño, no un correo reenviado."""
+    """Un mensaje pensado para el celular del dueño, no un correo reenviado.
+
+    Con web, tres bloques: quién sos · la falla medida y UNA consecuencia ·
+    el boceto de esa falla arreglada y una pregunta que se contesta con sí o no.
+    Quien llama decide antes si hay falla que contar (`regla_toque1`).
+    """
     rubro = rubro_de(lead.nicho, nombre=lead.nombre)
     busqueda = busqueda_de(lead.nicho)
     dominio = dominio_de(lead)
     dialecto = dialecto_por_url(lead.url)
-    hallazgos = hallazgos_de(lead, 1)
-    principal = hallazgos[0] if hallazgos else None
-    inaccesible = bool(lead.audit and lead.audit.veredicto == "inaccesible")
+    principal = regla_toque1(lead) if lead.url else None
+    regla = principal.rule_id if principal else ("sin_web" if not lead.url else "")
+    inaccesible = regla == "sitio_inaccesible"
+    inmobiliaria = rubro.plural == "inmobiliarias"
     prueba = frase_prueba(cfg)
 
-    cabecera = f"{elegir(SALUDOS, lead.id, 'saludo_wa')} {_presentacion(lead, cfg)}"
+    plural = rubro.plural if (lead.url and rubro is not GENERICO) else None
+    saludos = SALUDOS_V5 if plural else SALUDOS
+    cabecera = f"{elegir(saludos, lead.id, 'saludo_wa')} {_presentacion(lead, cfg, plural)}"
+    cierre = elegir(CIERRE if lead.url else CIERRES_CON_BOCETO, lead.id, "cierre_wa")
 
     if not lead.url:
         rep = reputacion(lead)
@@ -124,19 +189,27 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
         cuerpo_medio = f"{apertura}{dato} {fuga}"
         oferta = ("Te armo un boceto de un catálogo con prendas, talles y pedidos para revisar en WhatsApp."
                   if rubro.plural == "tiendas de ropa" else elegir(OFERTAS_SIN_WEB, lead.id, "oferta_wa"))
+    elif inmobiliaria and principal:
+        campos = dict(d=dominio, s=_segundos(lead),
+                      v=elegir(VERBO, lead.id, "verbo").format(d=dominio),
+                      vc=elegir(VERBO_CELU, lead.id, "verbo").format(d=dominio))
+        observacion = elegir(OBSERVACION[regla], lead.id, "observacion").format(**campos)
+        consecuencia = elegir(CONSECUENCIA_INMOBILIARIA[regla], lead.id, "consecuencia")
+        cuerpo_medio = f"{observacion} {consecuencia}"
+        if inaccesible:
+            oferta, cierre = "", elegir(CIERRE_INACCESIBLE, lead.id, "cierre_wa")
+        else:
+            oferta = elegir(OFERTA[regla], lead.id, "oferta_wa")
     elif inaccesible:
         cuerpo_medio = (
             f"Quise entrar a {dominio} buscando {busqueda} y no cargó, probé dos veces. "
             f"El que te busca y se encuentra con eso no vuelve a probar: entra al siguiente resultado."
         )
-        oferta = "Si querés te paso exactamente qué error me apareció."
+        oferta, cierre = "Si querés te paso exactamente qué error me apareció.", "¿Te sirve?"
     else:
         apertura = elegir(APERTURAS_CON_WEB, lead.id, "apertura_wa").format(
             dominio=dominio, busqueda=busqueda)
-        observacion = minuscula_inicial(
-            principal.observacion if principal else
-            "la primera pantalla no está invitando a nadie a contactarte"
-        ).rstrip(".")
+        observacion = minuscula_inicial(principal.observacion if principal else "").rstrip(".")
         # Un hallazgo de una auditoría vieja trae la consecuencia dentro de la
         # observación: agregarle otra la diría dos veces en 73 palabras.
         consecuencia = "" if (principal and principal.legado) else (
@@ -149,38 +222,52 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
         oferta = ("Puedo mostrarte un boceto para facilitar la elección de prendas y el pedido."
                   if rubro.plural == "tiendas de ropa" else elegir(OFERTAS_CON_WEB, lead.id, "oferta_wa"))
 
-    cierre = elegir(CIERRES_CON_BOCETO, lead.id, "cierre_wa")
-    if inaccesible:
-        cierre = "¿Te sirve?"
-
     bloques = [cabecera, cuerpo_medio]
     if prueba:
         bloques.append(prueba)
-    bloques.append(f"{oferta} {cierre}")
+    bloques.append(f"{oferta} {cierre}".strip())
 
     # Sin firma, sin enlace, sin asunto: el nombre y el número ya están en el
     # encabezado del chat, y el asunto no se manda por este canal (el .txt lo
     # imprimía como "gancho de referencia", o sea: trabajo tirado).
-    cuerpo = limpiar("\n\n".join(b for b in bloques if b), dialecto)
-    return EmailDraft(asunto="", cuerpo=cuerpo, generado_por="plantilla-whatsapp")
+    cuerpo = estilo_felipe(limpiar("\n\n".join(b for b in bloques if b), dialecto))
+    return EmailDraft(asunto="", cuerpo=cuerpo, generado_por=VERSION, regla=regla)
 
 
-def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False) -> list[Lead]:
+def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False,
+                      hoy: date | None = None) -> list[Lead]:
     """Redacta el segmento sin email pero con teléfono.
 
     Se guarda en `lead.email_draft` porque es el único campo de borrador que
     tiene el modelo, pero el texto NO es un correo: `generado_por` lo marca
-    como "plantilla-whatsapp" para que `lint` y `stats` puedan separarlos.
+    como WhatsApp para que `lint` y `stats` puedan separarlos.
+
+    Recompone todo borrador de una versión anterior (la v4 de la cola) y nunca
+    toca un lead enviado o respondido: el filtro de estado los deja afuera.
     """
+    hoy = hoy or date.today()
     candidatos = [
         lead for lead in leads
         if lead.estado in {"auditado", "listo_whatsapp"}
         and (forzar or lead.email_draft is None
-             or lead.email_draft.generado_por != "plantilla-whatsapp")
-        and not lead.contactable and lead.telefono
+             or lead.email_draft.generado_por != VERSION)
+        # Un lead con email que ya está en `listo_whatsapp` se pasó a este canal
+        # a propósito: 13 inmobiliarias v4 quedaban sin recomponer por tener email.
+        and (not lead.contactable or lead.estado == "listo_whatsapp") and lead.telefono
     ]
-    rechazados = 0
+    rechazados = viejas = sin_falla = 0
     for lead in candidatos:
+        if lead.url and _auditoria_vieja(lead, hoy):
+            viejas += 1
+            lead.email_draft, lead.estado = None, "auditado"
+            lead.motivo_descarte = (f"auditoría de más de {MAX_DIAS_AUDITORIA} días: "
+                                    "re-auditar antes de redactar")
+            continue
+        if lead.url and regla_toque1(lead) is None:
+            sin_falla += 1
+            lead.email_draft, lead.estado = None, "descartado"
+            lead.motivo_descarte = "sin falla verificable para toque 1"
+            continue
         borrador = componer_whatsapp(lead, cfg.compose)
         problemas = validar(borrador, canal="whatsapp", dominio_propio=dominio_de(lead))
         if problemas:
@@ -188,8 +275,14 @@ def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False) -> list[Lead
             log.warning("WhatsApp con problemas para %s (%s)", lead.etiqueta, ", ".join(problemas))
         lead.email_draft = borrador
         lead.estado = "listo_whatsapp"
+        lead.motivo_descarte = None
         log.info("✎ %s (WhatsApp, %s) · %d palabras",
                  lead.etiqueta, lead.telefono, len(borrador.cuerpo.split()))
+    if viejas:
+        log.warning("%d leads con auditoría de más de %d días: re-auditar con «audit --forzar»",
+                    viejas, MAX_DIAS_AUDITORIA)
+    if sin_falla:
+        log.info("%d leads descartados por no tener una falla verificable para el toque 1", sin_falla)
     if rechazados:
         log.warning("%d/%d mensajes de WhatsApp no pasan la validación del canal",
                     rechazados, len(candidatos))

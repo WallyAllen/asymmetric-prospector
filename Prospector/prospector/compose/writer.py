@@ -307,6 +307,18 @@ _URL = re.compile(
 _DOMINIO_EN_ASUNTO = re.compile(r"\.(com|ar|es|net|org|online)\b", re.I)
 
 
+# Toque 1 por WhatsApp (spec 009). "Sistema", "CRM" y "Tokko" abren la salida
+# del "ya tenemos": tres de los rechazos de la v4 contestaron exactamente eso.
+# Pedir números ("en un mes normal", "cuántos pedidos") le pide trabajo a un
+# desconocido, y "la misma foto"/"el mismo buscador" describen la portada en vez
+# de una falla que se compruebe.
+FRASES_PROHIBIDAS_WHATSAPP = (
+    "sistema", "crm", "tokko", "seguramente", "por qué elegirte", "por que elegirte",
+    "en un mes normal", "cuántos pedidos", "cuantos pedidos", "la misma foto",
+    "el mismo buscador",
+)
+
+
 def validar(borrador: EmailDraft, canal: str = "email", dominio_propio: str = "") -> list[str]:
     """Problemas que impiden mandar este texto. Lista vacía = se puede mandar."""
     limites = LIMITES.get(canal, LIMITES["email"])
@@ -332,6 +344,9 @@ def validar(borrador: EmailDraft, canal: str = "email", dominio_propio: str = ""
             problemas.append(f"frase prohibida: «{frase}»")
 
     if canal == "whatsapp":
+        for frase in FRASES_PROHIBIDAS_WHATSAPP:
+            if frase in minuscula:
+                problemas.append(f"frase prohibida: «{frase}»")
         # Un enlace en el primer mensaje de un número desconocido es la señal
         # de spam más fuerte que hay, para la plataforma y para la persona.
         # Se admite una sola excepción: el dominio DEL PROSPECTO, que es la

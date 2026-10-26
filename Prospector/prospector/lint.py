@@ -28,6 +28,7 @@ from .storage import load_leads
 OBJETIVOS = {
     "duplicacion": 45,       # % de palabras compartidas entre mensajes del canal
     "apertura_top": 12,      # % que abre con la misma oración
+    "oracion_top": 25,       # % que repite una misma oración del cuerpo, en cualquier lugar
 }
 
 _CREDENCIAL = re.compile(r"\b(unlp|uba|utn|universidad|facultad|estudiante|carrera de)\b", re.I)
@@ -42,7 +43,7 @@ ENVIADOS = {"enviado", "enviado_whatsapp", "rebotado"}
 
 
 def _canal(lead: Lead) -> str:
-    if lead.email_draft and lead.email_draft.generado_por == "plantilla-whatsapp":
+    if lead.email_draft and lead.email_draft.generado_por.startswith("plantilla-whatsapp"):
         return "whatsapp"
     return "whatsapp" if (not lead.contactable and lead.telefono) else "email"
 
@@ -76,6 +77,26 @@ def _primera_oracion(cuerpo: str) -> str:
     return partes[0][:64] if partes else ""
 
 
+def _oracion_mas_repetida(cuerpos: list[str]) -> tuple[str, float]:
+    """La oración del cuerpo que más mensajes comparten, y en qué %.
+
+    La apertura sola no alcanzaba: en el prototipo de la v5, con cinco
+    cierres, el más repetido salía en el 26 % de los mensajes y el lint no lo
+    veía. Se saltea el primer bloque (el saludo, que ya mide la apertura) y
+    cada oración cuenta una vez por mensaje.
+    """
+    if not cuerpos:
+        return "", 0.0
+    veces: Counter[str] = Counter()
+    for cuerpo in cuerpos:
+        resto = re.sub(r"^[^\n]*\n\n", "", cuerpo.strip(), count=1)
+        veces.update(set(o.strip() for o in re.split(r"(?<=[.?])\s+", resto) if o.strip()))
+    if not veces:
+        return "", 0.0
+    frase, n = veces.most_common(1)[0]
+    return frase, 100 * n / len(cuerpos)
+
+
 def _marca(valor: float, objetivo: float) -> str:
     return "  ⚠" if valor > objetivo else "  ✓"
 
@@ -99,6 +120,17 @@ def _bloque(nombre: str, leads: list[Lead], lineas: list[str]) -> None:
                       f"{_marca(pct, OBJETIVOS['apertura_top'])}")
         lineas.append(f"      «{frase}…»")
         lineas.append(f"  aperturas distintas       {len(aperturas):5d}")
+
+    frase, pct = _oracion_mas_repetida(cuerpos)
+    if frase:
+        lineas.append(f"  oración más repetida      {pct:5.0f}%   (objetivo < {OBJETIVOS['oracion_top']}%)"
+                      f"{_marca(pct, OBJETIVOS['oracion_top'])}")
+        lineas.append(f"      «{frase[:64]}»")
+
+    reglas = Counter(l.email_draft.regla for l in leads if l.email_draft and l.email_draft.regla)
+    if reglas:
+        lineas.append("  por regla                 " +
+                      " · ".join(f"{r} {n}" for r, n in reglas.most_common()))
 
     palabras = sorted(len(c.split()) for c in cuerpos)
     mediana = palabras[len(palabras) // 2]

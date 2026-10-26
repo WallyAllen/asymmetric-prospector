@@ -123,8 +123,9 @@ class TestTexto(unittest.TestCase):
         for i in range(30):
             cuerpo = _cuerpo(_lead(_f("sin_tel_movil"), id=f"ejemplo-{i}"))
             self.assertTrue(cuerpo.rstrip().endswith("?"), cuerpo)
-            ultima = re.split(r"(?<=[.?])\s+", cuerpo.strip())[-1].lower()
-            self.assertNotRegex(ultima, r"\b(qu[eé]|cu[aá]nt|c[oó]mo|por qu[eé])\b")
+            # La pregunta es lo que sigue a la última coma: "Es sin cargo, te lo paso?".
+            pregunta = re.split(r"(?<=[.?])\s+", cuerpo.strip())[-1].split(",")[-1].strip().lower()
+            self.assertNotRegex(pregunta, r"^(que|cuant|como|por que)\b")
 
     def test_estilo_felipe_sin_tildes_ni_apertura(self):
         self.assertEqual("Hola, que tal? Te mando el boceto, queres verlo? Año, niño.",
@@ -169,6 +170,14 @@ class TestCola(unittest.TestCase):
         self.assertEqual("enviado_whatsapp", enviado.estado)
         self.assertEqual("lo que leyó", respondido.email_draft.cuerpo)
         self.assertEqual("respondido", respondido.estado)
+
+    def test_recompone_v4_aunque_tenga_email(self):
+        """Si ya está en `listo_whatsapp`, se lo pasó a este canal a propósito."""
+        v4 = _lead(_f("carga_lenta"), id="ejemplo-v4-mail", estado="listo_whatsapp")
+        v4.email = "hola@ejemplo.com.ar"
+        v4.email_draft = EmailDraft(cuerpo="texto v4", generado_por="claude-v4-whatsapp")
+        _redactar(v4)
+        self.assertEqual("plantilla-whatsapp-v5", v4.email_draft.generado_por)
 
     def test_auditoria_vieja_no_se_redacta(self):
         """El mensaje afirma algo que el prospecto comprueba abriendo la web:

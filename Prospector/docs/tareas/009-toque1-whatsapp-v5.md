@@ -75,10 +75,9 @@ comprobar (LCP de 2,5 a 4 s, texto chico, tap targets).
      `merge_leads` ya adopta la auditoría con `auditado_el` más nuevo, así que el
      `compose` siguiente redacta sobre la medición fresca. No hace falta tocar
      `storage.py`.
-   - Medido hoy (26/10) sobre las 244 inmobiliarias con web en `auditado` o
-     `listo_whatsapp`: 135 tienen la auditoría de hace 21-27 días y 109 de hace
-     7-13. Sin re-auditar, más de la mitad de la cola queda sin redactar, y está
-     bien que así sea.
+   - Medido el 26/10 después de fusionar con `02_audited`: las 53 inmobiliarias
+     con web que quedaron redactadas tienen la auditoría de hace 10 días. A partir
+     del 30/10 cualquier `compose` las deja sin redactar hasta re-auditarlas.
 
 ### Textos (inmobiliarias)
 

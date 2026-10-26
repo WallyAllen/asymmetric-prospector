@@ -194,6 +194,9 @@ class EmailDraft(_Serializable):
     adjunto: str | None = None      # ruta relativa a la captura anotada
     generado_por: str = "plantilla"  # ia | plantilla
     redactado_el: str = field(default_factory=_now)
+    # El rule_id que lideró el toque 1 de WhatsApp. Sin esto no hay forma de
+    # medir qué falla trae respuestas y cuál no (spec 009).
+    regla: str = ""
 
 
 @dataclass(slots=True)
