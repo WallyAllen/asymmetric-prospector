@@ -158,7 +158,8 @@ def exportar(leads: list[Lead], cfg: Settings = settings) -> list[Lead]:
         "ÍNDICE — ordenado por oportunidad (score de auditoría)",
         "✓wa = WhatsApp publicado por el negocio · ok = celular · ? = línea fija, puede no tener WhatsApp",
         "Copiá el texto del archivo y pegalo en WhatsApp Web al teléfono indicado,",
-        f"o usá `py scripts/send_whatsapp.py`. Tope diario sugerido: {tope} mensajes.",
+        f"o usá `py scripts/send_whatsapp.py`. "
+        + (f"Tope diario sugerido: {tope} mensajes." if tope > 0 else "Sin tope diario: cortás vos."),
         "=" * 70,
         "",
     ]
@@ -173,5 +174,6 @@ def exportar(leads: list[Lead], cfg: Settings = settings) -> list[Lead]:
                       f"+{numero.e164:<15} {ruta.name}{corte}")
 
     (WHATSAPP_DIR / INDICE_FILE).write_text("\n".join(lineas) + "\n", encoding="utf-8")
-    log.info("WhatsApp: %d mensajes listos en %s (tope diario %d)", len(listos), WHATSAPP_DIR, tope)
+    log.info("WhatsApp: %d mensajes listos en %s (tope diario %s)", len(listos), WHATSAPP_DIR,
+             tope if tope > 0 else "sin tope")
     return leads

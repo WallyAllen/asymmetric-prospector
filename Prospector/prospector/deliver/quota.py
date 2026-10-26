@@ -1,6 +1,7 @@
 """Control de cuota y ventana de envío: la parte que salva la reputación del dominio."""
 from __future__ import annotations
 
+import sys
 from datetime import datetime, time
 from pathlib import Path
 
@@ -31,8 +32,22 @@ class Quota:
         return int(self.registro.get(self.hoy, 0))
 
     @property
+    def sin_tope(self) -> bool:
+        """`daily_cap` en 0 (o menos) significa que no hay freno automático."""
+        return self.cfg.daily_cap <= 0
+
+    @property
     def restantes(self) -> int:
+        if self.sin_tope:
+            return sys.maxsize
         return max(0, self.cfg.daily_cap - self.enviados_hoy)
+
+    @property
+    def resumen(self) -> str:
+        """"12/50 usados" o "12 enviados hoy, sin tope"."""
+        if self.sin_tope:
+            return f"{self.enviados_hoy} enviados hoy, sin tope"
+        return f"{self.enviados_hoy}/{self.cfg.daily_cap} usados"
 
     def anotar(self) -> None:
         self.registro[self.hoy] = self.enviados_hoy + 1

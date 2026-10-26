@@ -3,9 +3,10 @@
 Abre el chat con el texto ya cargado y, si hay captura, la deja en el
 portapapeles para pegarla. Lo que cambió respecto de la versión anterior:
 
-  · **cuota diaria y ventana horaria** (`WA_DAILY_CAP`, por defecto 50). En
-    correo pasarse cuesta entregabilidad; acá cuesta el número, con los chats
-    adentro y sin apelación.
+  · **cuota diaria y ventana horaria** (`WA_DAILY_CAP`). Por defecto en 0 =
+    sin tope: frenás vos con 'q', o con `--limite N` para una tanda. Con un
+    número mayor que 0 vuelve el freno automático. Ojo: en correo pasarse
+    cuesta entregabilidad; acá cuesta el número, con los chats adentro.
   · **registro real de lo enviado** en `data/04_sent/registro_whatsapp.json`,
     con fecha. Antes solo se marcaba `estado = "enviado"` —el mismo valor que
     usa el correo— así que 56 mensajes quedaron sin fecha, sin canal y fuera
@@ -95,13 +96,16 @@ def main() -> int:
         if input("¿Seguir igual? (s/N): ").strip().lower() != "s":
             return 0
     if cuota.restantes <= 0:
-        print(f"Cuota diaria agotada ({cuota.enviados_hoy}/{cfg.whatsapp.daily_cap}). Seguimos mañana.")
+        print(f"Cuota diaria agotada ({cuota.resumen}). Seguimos mañana.")
         return 0
 
     tope = min(cuota.restantes, args.limite) if args.limite else cuota.restantes
     tanda = cola[:tope]
-    print(f"{len(cola)} en cola · {cuota.restantes} disponibles hoy "
-          f"({cuota.enviados_hoy}/{cfg.whatsapp.daily_cap} usados)")
+    if cuota.sin_tope:
+        print(f"{len(cola)} en cola · {len(tanda)} en esta tanda ({cuota.resumen}) "
+              "· 'q' para cortar cuando quieras")
+    else:
+        print(f"{len(cola)} en cola · {cuota.restantes} disponibles hoy ({cuota.resumen})")
     print("-" * 62)
 
     for i, lead in enumerate(tanda, 1):
@@ -145,7 +149,7 @@ def main() -> int:
             registrar_whatsapp(lead)
             cuota.anotar()
             save_leads(COMPOSED_FILE, leads)
-            print(f"          ✓ registrado ({cuota.enviados_hoy}/{cfg.whatsapp.daily_cap} hoy)")
+            print(f"          ✓ registrado ({cuota.resumen})")
             if cuota.restantes <= 0:
                 print("\nCuota diaria alcanzada. Mejor cortar acá.")
                 break

@@ -163,9 +163,14 @@ class WhatsAppSettings:
     La señal que conviene mirar no es este número sino la bandeja: mensajes
     que se quedan en un tilde cuando antes llegaban, y el aviso de cuenta
     restringida. Si aparece cualquiera de los dos, bajarlo.
+
+    Por defecto ya no hay tope (`WA_DAILY_CAP=0`): el corte lo decide el
+    operador con 'q' en `send_whatsapp.py` o con `--limite N` para una tanda.
+    Poner un número mayor que 0 vuelve a activar el freno automático.
     """
 
-    daily_cap: int = field(default_factory=lambda: _env_int("WA_DAILY_CAP", 50))
+    # 0 o negativo = sin tope diario.
+    daily_cap: int = field(default_factory=lambda: _env_int("WA_DAILY_CAP", 0))
     window_start_h: int = field(default_factory=lambda: _env_int("WA_WINDOW_START", 10))
     window_end_h: int = field(default_factory=lambda: _env_int("WA_WINDOW_END", 19))
     skip_weekends: bool = field(default_factory=lambda: _env_bool("WA_SKIP_WEEKENDS", True))
