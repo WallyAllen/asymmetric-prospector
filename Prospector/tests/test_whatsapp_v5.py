@@ -179,6 +179,25 @@ class TestCola(unittest.TestCase):
         _redactar(v4)
         self.assertEqual("plantilla-whatsapp-v5", v4.email_draft.generado_por)
 
+    def test_recompone_si_la_auditoria_es_mas_nueva_que_el_borrador(self):
+        """Re-auditada, una web que ya carga seguía con el "no cargó" de la v5."""
+        lead = _lead(_f("carga_lenta"), estado="listo_whatsapp")
+        lead.email_draft = EmailDraft(cuerpo="Quise entrar y no cargó.", generado_por="plantilla-whatsapp-v5",
+                                      regla="sitio_inaccesible", redactado_el="2026-10-19T00:00:00+00:00")
+        _redactar(lead)
+        self.assertEqual("carga_lenta", lead.email_draft.regla)
+
+    def test_respuesta_http_de_error_va_a_revision_manual(self):
+        """Un 403 al navegador del auditor suele ser un bloqueo de bots: una
+        persona la ve bien, y "no cargó" sería falso. Los demás hallazgos se
+        midieron sobre la página de error, así que tampoco sirven."""
+        lead = _lead(_f("sitio_inaccesible"), _f("sin_viewport"))
+        lead.audit.metrics.http_status = 403
+        _redactar(lead)
+        self.assertEqual("revisar_web", lead.estado)
+        self.assertIsNone(lead.email_draft)
+        self.assertIn("403", lead.motivo_descarte)
+
     def test_auditoria_vieja_no_se_redacta(self):
         """El mensaje afirma algo que el prospecto comprueba abriendo la web:
         un "no cargó" de hace tres semanas puede ser falso hoy."""

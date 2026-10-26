@@ -250,18 +250,30 @@ def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False,
         lead for lead in leads
         if lead.estado in {"auditado", "listo_whatsapp"}
         and (forzar or lead.email_draft is None
-             or lead.email_draft.generado_por != VERSION)
+             or lead.email_draft.generado_por != VERSION
+             # Re-auditada después de redactar: el borrador afirma lo que medía
+             # la auditoría anterior (un "no cargó" sobre una web que ya carga).
+             or bool(lead.audit and lead.audit.auditado_el > lead.email_draft.redactado_el))
         # Un lead con email que ya está en `listo_whatsapp` se pasó a este canal
         # a propósito: 13 inmobiliarias v4 quedaban sin recomponer por tener email.
         and (not lead.contactable or lead.estado == "listo_whatsapp") and lead.telefono
     ]
-    rechazados = viejas = sin_falla = 0
+    rechazados = viejas = sin_falla = revisar = 0
     for lead in candidatos:
         if lead.url and _auditoria_vieja(lead, hoy):
             viejas += 1
             lead.email_draft, lead.estado = None, "auditado"
             lead.motivo_descarte = (f"auditoría de más de {MAX_DIAS_AUDITORIA} días: "
                                     "re-auditar antes de redactar")
+            continue
+        estado_http = lead.audit.metrics.http_status if (lead.url and lead.audit) else None
+        if estado_http and estado_http >= 400:
+            # 5 de las 20 "caídas" de la cola del 26/10 eran un 403 o un 500 con
+            # contenido: casi siempre un bloqueo de bots que una persona no ve.
+            # "No cargó" sería falso, y el resto se midió sobre la página de error.
+            revisar += 1
+            lead.email_draft, lead.estado = None, "revisar_web"
+            lead.motivo_descarte = f"la web respondió HTTP {estado_http} al auditor: revisar a mano"
             continue
         if lead.url and regla_toque1(lead) is None:
             sin_falla += 1
@@ -281,6 +293,8 @@ def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False,
     if viejas:
         log.warning("%d leads con auditoría de más de %d días: re-auditar con «audit --forzar»",
                     viejas, MAX_DIAS_AUDITORIA)
+    if revisar:
+        log.warning("%d leads a revisar_web: la web respondió con error HTTP al auditor", revisar)
     if sin_falla:
         log.info("%d leads descartados por no tener una falla verificable para el toque 1", sin_falla)
     if rechazados:
