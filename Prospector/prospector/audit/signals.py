@@ -19,6 +19,7 @@ from ..models import Metrics
 from ..telefono import de_enlace_whatsapp, normalizar
 from ..utils import negocio_domain, slugify
 from .probe_js import AUDIT_JS, WEB_VITALS_INIT_JS
+from .sistema import detectar_sistema
 
 log = get_logger("señales")
 
@@ -324,6 +325,9 @@ def _consolidar(res: ProbeResult) -> None:
     met.whatsapp_web = _numero_de_whatsapp(d.get("whatsappHrefs"))
     met.tel_web = _primer_tel(d.get("telHrefs"))
     met.generador = d.get("generador")
+    # Sin `recursos` (JS viejo) queda None: no medido, que no es "sin_detectar".
+    if "recursos" in d:
+        met.sistema_web = detectar_sistema(d.get("generador"), d.get("recursos"))
     met.ano_copyright = d.get("anoCopyright")
     met.popup_intrusivo = bool(d.get("popupIntrusivo"))
     met.items_menu = d.get("itemsMenu")

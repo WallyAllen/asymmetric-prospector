@@ -41,7 +41,7 @@ pytest tests/                                        # la suite
 | `prospector/config.py` | settings + rutas de `data/`; todo lo configurable |
 | `prospector/storage.py` | leer/escribir los JSON de `data/` |
 | `prospector/sources/` | minado: `google_maps.py`, `search.py`, `contacts.py` |
-| `prospector/audit/` | medición: `rules.py` (el score), `capture.py`, `signals.py`, `vision.py` |
+| `prospector/audit/` | medición: `rules.py` (el score), `capture.py`, `signals.py`, `vision.py`, `sistema.py` (qué CRM o constructor usa la web) |
 | `prospector/compose/` | redacción: `writer.py`, `whatsapp.py`, `lexicon.py` |
 | `prospector/deliver/` | envío: `mailer.py`, `whatsapp.py`, `quota.py` |
 | `tests/` | `test_core.py`, `test_migracion.py`, `test_salida.py` |

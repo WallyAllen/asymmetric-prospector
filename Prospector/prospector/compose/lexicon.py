@@ -339,3 +339,54 @@ OFERTA = {
 CIERRE = ("¿Te lo paso?", "¿Te lo mando?", "¿Querés verlo?", "Es sin cargo, ¿te lo paso?",
           "¿Te sirve que te lo pase?", "¿Lo querés ver?", "Si te sirve, ¿te lo mando?")
 CIERRE_INACCESIBLE = ("Si querés te paso qué error me apareció, ¿te sirve?",)
+
+
+# ─────────────────────────────── Spec 010: mail v6 e identidad en WhatsApp ───────────────────────────────
+# Los dos clientes que pagaron seña (Monte, Portillo) recibieron el formato formal:
+# nombre completo, qué hace, LinkedIn y teléfono. El cuerpo es el de la v5.
+
+SALUDOS_MAIL_V6 = ("Hola, ¿qué tal?", "Hola, ¿cómo va?", "Buenas, ¿cómo estás?")
+PRESENTACIONES_MAIL_V6 = (
+    "Soy {nombre}, de La Plata, y hago webs para inmobiliarias.",
+    "Me llamo {nombre} y me dedico a hacer webs para inmobiliarias.",
+    "Te escribo por algo puntual de tu web. Soy {nombre} y hago webs para inmobiliarias.",
+)
+REPUTACION_MAIL_V6 = (
+    "En Maps tenés {rep}: gente que te busca hay.",
+    "Vi que tenés {rep} en Maps, así que demanda hay.",
+)
+# Real: Monte pidió la web orientada a tasaciones. No se nombra.
+QUE_HAGO_MAIL_V6 = (
+    "Ahora estoy armando la web de una inmobiliaria de Zona Norte, orientada a tasaciones.",
+    "Hoy estoy terminando la web de una inmobiliaria de Zona Norte que la pidió pensada para captar propiedades.",
+    "Es lo que estoy haciendo para una inmobiliaria de Zona Norte: una web pensada para que el que quiere vender pida la tasación.",
+)
+CIERRE_MAIL_V6 = (
+    "Me lleva un par de horas armarlo. ¿Te lo paso para que lo veas?",
+    "No tiene costo. ¿Querés que te lo mande?",
+    "Lo armo en un par de horas. ¿Te lo mando y lo ves con calma?",
+    "No te cobro el boceto. ¿Te lo paso y me decís qué te parece?",
+)
+IDENTIDAD_V6 = (
+    "Te dejo mi LinkedIn por si querés ver quién soy: {enlace}",
+    "Por si querés saber quién te escribe: {enlace}",
+)
+
+
+# ─────────────────────────────── Spec 012: qué usa la web ───────────────────────────────
+# Cinco de las siete inmobiliarias que respondieron ya tenían CRM. Con CRM se nombra
+# el suyo: la web lee lo que ya cargan, no es otra cosa más para administrar. Sin CRM
+# detectado no se sabe si no usan nada o usan uno que no reconocemos, así que la frase
+# es cierta en los dos casos y no nombra productos. Ni "sistema" ni "CRM": abren la
+# salida del "ya tenemos" (009). Tope 11 palabras: el peor mail v6 queda en 150.
+NOMBRE_SISTEMA = {"tokko": "Tokko", "wasi": "Wasi"}
+PROPIEDADES_MAIL_V6 = {
+    "crm": (
+        "Tus propiedades saldrían solas de {sistema}, sin cargarlas dos veces.",
+        "Las propiedades salen de tu {sistema}: no cargás nada dos veces.",
+    ),
+    "desconocido": (
+        "Tu web nueva funciona con lo que ya uses para las propiedades.",
+        "Tu web nueva se adapta a lo que uses para las propiedades.",
+    ),
+}

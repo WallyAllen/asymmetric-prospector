@@ -210,6 +210,12 @@ AUDIT_JS = r"""
     telsUnicos: telsUnicos,
     emailsUnicos: emailsUnicos,
     tituloDirectorio: tituloDir,
+    // Spec 012: las URLs que carga la página, para saber qué sistema usa
+    // (Tokko, WASI, WordPress...). Se interpreta en `sistema.py`.
+    recursos: Array.from(new Set(Array.from(document.querySelectorAll(
+        'script[src],link[href],img[src],iframe[src],a[href]'))
+      .map(e => e.src || e.href).filter(u => typeof u === 'string' && /^https?:/i.test(u))))
+      .slice(0, 400),
     rects: {
       hero: contentRectOf(heroCandidate),
       nav: rectOf(nav),

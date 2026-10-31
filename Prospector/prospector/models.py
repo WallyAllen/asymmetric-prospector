@@ -135,6 +135,8 @@ class Metrics(_Serializable):
     imagenes_sin_alt: int | None = None
     palabras_en_fold: int | None = None
     generador: str | None = None
+    # Spec 012: tokko | wasi | wordpress | wix | ... | sin_detectar. None = no medido.
+    sistema_web: str | None = None
     ano_copyright: int | None = None
     popup_intrusivo: bool | None = None
     items_menu: int | None = None
@@ -197,6 +199,11 @@ class EmailDraft(_Serializable):
     # El rule_id que lideró el toque 1 de WhatsApp. Sin esto no hay forma de
     # medir qué falla trae respuestas y cuál no (spec 009).
     regla: str = ""
+    # "formal" (mail v6) · "corta" / "identidad" (WhatsApp v6). Spec 010.
+    variante: str = ""
+    # Qué sistema tenía la web al redactar (spec 012): mide qué perfil responde.
+    # "" cuando el mail no lleva la línea de propiedades.
+    sistema: str = ""
 
 
 @dataclass(slots=True)
