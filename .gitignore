@@ -5,6 +5,7 @@
 # ============================================================
 /Landing/
 /clientes/
+/felipeborrazas/
 
 # Entornos virtuales y secretos
 venv/
