@@ -1,4 +1,4 @@
-"""Mail v6 para inmobiliarias (spec 010).
+"""Mail v6 para todos los rubros (specs 010–012).
 
 El formato formal es el que trajo las dos señas: responde menos que el WhatsApp
 corto, pero las charlas llegan más lejos. Cuerpo de la v5 (una falla que el
@@ -13,20 +13,22 @@ from datetime import date
 from ..audit.sistema import perfil_sistema
 from ..models import EmailDraft, Lead
 from .lexicon import (CIERRE_INACCESIBLE, CIERRE_MAIL_V6, CONSECUENCIA_INMOBILIARIA,
-                      NOMBRE_SISTEMA, OBSERVACION, OFERTA, PROPIEDADES_MAIL_V6, PRESENTACIONES_MAIL_V6, QUE_HAGO_MAIL_V6, REPUTACION_MAIL_V6,
+                      GENERICO, NOMBRE_SISTEMA, OBSERVACION, OFERTA, PROPIEDADES_MAIL_V6, PRESENTACIONES_MAIL_V6, QUE_HAGO_MAIL_V6, REPUTACION_MAIL_V6,
                       SALUDOS_MAIL_V6, VERBO, VERBO_CELU, elegir, rubro_de)
-from .whatsapp import MAX_DIAS_AUDITORIA, _auditoria_vieja, _segundos, estilo_felipe, regla_toque1
+from .whatsapp import OFERTAS_CON_WEB, MAX_DIAS_AUDITORIA, _auditoria_vieja, _segundos, estilo_felipe, hallazgo_generico, regla_toque1
 from .writer import asunto_para, dominio_de, limpiar, reputacion, validar
 
 VERSION_MAIL = "plantilla-mail-v6"
 
 
-def firma_v6(cfg) -> str:
-    lineas = [cfg.sender_name, "Webs para inmobiliarias", cfg.sender_site, cfg.sender_phone]
+def firma_v6(cfg, oficio="webs para inmobiliarias") -> str:
+    lineas = [cfg.sender_name, oficio[0].upper() + oficio[1:], cfg.sender_site, cfg.sender_phone]
     return "\n".join(l for l in lineas if l)
 
 
 def componer_mail_v6(lead: Lead, cfg) -> EmailDraft:
+    rubro = rubro_de(lead.nicho, nombre=lead.nombre)
+    oficio = "páginas web" if rubro is GENERICO else f"webs para {rubro.plural}"
     principal = regla_toque1(lead)
     regla = principal.rule_id
     d = dominio_de(lead)
@@ -34,18 +36,21 @@ def componer_mail_v6(lead: Lead, cfg) -> EmailDraft:
                   v=elegir(VERBO, lead.id, "verbo").format(d=d),
                   vc=elegir(VERBO_CELU, lead.id, "verbo").format(d=d))
     saludo = elegir(SALUDOS_MAIL_V6, lead.id, "saludo_mail")
-    presentacion = elegir(PRESENTACIONES_MAIL_V6, lead.id, "presentacion_mail").format(nombre=cfg.sender_name.split()[0])
+    presentacion = elegir(PRESENTACIONES_MAIL_V6, lead.id, "presentacion_mail").format(nombre=cfg.sender_name.split()[0], oficio=oficio)
     rep = reputacion(lead) if ((lead.resenas or 0) >= 30 and (lead.rating or 0) >= 4.5) else ""
     linea_rep = elegir(REPUTACION_MAIL_V6, lead.id, "rep_mail").format(rep=rep) if rep else ""
     observacion = elegir(OBSERVACION[regla], lead.id, "observacion").format(**campos)
     consecuencia = elegir(CONSECUENCIA_INMOBILIARIA[regla], lead.id, "consecuencia")
     hallazgo = " ".join(x for x in (observacion, consecuencia) if x)
+    if not _es_inmobiliaria(lead):
+        hallazgo = hallazgo_generico(lead, principal)
     sistema = ""
     if regla == "sitio_inaccesible":
         bloques = [f"{saludo} {presentacion}", hallazgo,
                    elegir(CIERRE_INACCESIBLE, lead.id, "cierre_mail")]
     else:
-        oferta = elegir(OFERTA[regla], lead.id, "oferta_wa")
+        oferta = (elegir(OFERTA[regla], lead.id, "oferta_wa") if _es_inmobiliaria(lead)
+                  else elegir(OFERTAS_CON_WEB, lead.id, "oferta_wa"))
         if _es_inmobiliaria(lead):
             # Spec 012: con CRM nombra el suyo; sin saberlo, una frase cierta en los dos casos.
             medido = lead.audit.metrics.sistema_web if lead.audit else None
@@ -53,9 +58,9 @@ def componer_mail_v6(lead: Lead, cfg) -> EmailDraft:
             oferta = f"{linea.format(sistema=NOMBRE_SISTEMA.get(medido, ''))} {oferta}"
             sistema = medido or "no_medido"
         bloques = [f"{saludo} {presentacion}", " ".join(x for x in (linea_rep, hallazgo) if x),
-                   elegir(QUE_HAGO_MAIL_V6, lead.id, "que_hago"),
+                   *([elegir(QUE_HAGO_MAIL_V6, lead.id, "que_hago")] if _es_inmobiliaria(lead) else []),
                    f"{oferta} {elegir(CIERRE_MAIL_V6, lead.id, 'cierre_mail')}"]
-    cuerpo = "\n\n".join(bloques) + "\n\n" + firma_v6(cfg)
+    cuerpo = "\n\n".join(bloques) + "\n\n" + firma_v6(cfg, oficio)
     return EmailDraft(asunto=estilo_felipe(asunto_para(lead, principal)),
                       cuerpo=estilo_felipe(limpiar(cuerpo)), generado_por=VERSION_MAIL,
                       regla=regla, sistema=sistema)
@@ -66,10 +71,10 @@ def _es_inmobiliaria(lead: Lead) -> bool:
 
 
 def redactar_mail_v6(leads, cfg, forzar: bool = False, hoy: date | None = None):
-    """Inmobiliarias con email: mismas puertas que el toque 1 de WhatsApp (009)."""
+    """Negocios con email y web: mismas puertas que el toque 1 de WhatsApp (009)."""
     hoy = hoy or date.today()
     for lead in leads:
-        if not (_es_inmobiliaria(lead) and lead.contactable and lead.url
+        if not (lead.contactable and lead.url
                 and lead.estado in {"auditado", "listo"}):
             continue
         if not forzar and lead.email_draft and lead.email_draft.generado_por == VERSION_MAIL:

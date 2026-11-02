@@ -347,9 +347,9 @@ CIERRE_INACCESIBLE = ("Si querés te paso qué error me apareció, ¿te sirve?",
 
 SALUDOS_MAIL_V6 = ("Hola, ¿qué tal?", "Hola, ¿cómo va?", "Buenas, ¿cómo estás?")
 PRESENTACIONES_MAIL_V6 = (
-    "Soy {nombre}, de La Plata, y hago webs para inmobiliarias.",
-    "Me llamo {nombre} y me dedico a hacer webs para inmobiliarias.",
-    "Te escribo por algo puntual de tu web. Soy {nombre} y hago webs para inmobiliarias.",
+    "Soy {nombre}, de La Plata, y hago {oficio}.",
+    "Me llamo {nombre} y me dedico a hacer {oficio}.",
+    "Te escribo por algo puntual de tu web. Soy {nombre} y hago {oficio}.",
 )
 REPUTACION_MAIL_V6 = (
     "En Maps tenés {rep}: gente que te busca hay.",

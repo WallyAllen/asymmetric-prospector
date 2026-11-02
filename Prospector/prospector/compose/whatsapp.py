@@ -34,14 +34,20 @@ from ..logging_setup import get_logger
 from ..models import EmailDraft, Finding, Lead
 from ..utils import dialecto_por_url
 from .lexicon import (CIERRE, CIERRE_INACCESIBLE, CONSECUENCIA_INMOBILIARIA, GENERICO,
-                      OBSERVACION, OFERTA, PRESENTACIONES_V5, SALUDOS_V5, VERBO,
+                      IDENTIDAD_V6, OBSERVACION, OFERTA, PRESENTACIONES_V5, SALUDOS_V5, VERBO,
                       VERBO_CELU, busqueda_de, elegir, rubro_de)
-from .writer import (dominio_de, frase_prueba, limpiar, mayuscula_inicial,
+from .writer import (dominio_de, enlace_corto, frase_prueba, limpiar, mayuscula_inicial,
                      minuscula_inicial, reputacion, validar)
 
 log = get_logger("whatsapp-redactor")
 
-VERSION = "plantilla-whatsapp-v5"
+VERSION = "plantilla-whatsapp-v6"
+
+# Spec 010. La mitad de las inmobiliarias recibe el LinkedIn en el primer bloque:
+# los dos que pagaron seña habían recibido nombre completo, LinkedIn y teléfono.
+VARIANTES_V6 = ("corta", "identidad")
+
+
 
 # Spec 009. Solo lidera lo que el prospecto comprueba abriendo su web. Quedan
 # afuera el LCP de 2,5 a 4 s (no se nota), el texto chico y los tap targets
@@ -158,6 +164,29 @@ def _segundos(lead: Lead) -> str:
     return f"{lcp:.1f}".replace(".", ",")
 
 
+def hallazgo_generico(lead: Lead, principal: Finding | None) -> str:
+    rubro = rubro_de(lead.nicho, nombre=lead.nombre)
+    dominio, busqueda = dominio_de(lead), busqueda_de(lead.nicho)
+    if rubro is GENERICO:
+        busqueda = "tu negocio"
+    if principal and principal.rule_id == "sitio_inaccesible":
+        return (f"Quise entrar a {dominio} buscando {busqueda} y no cargó, probé dos veces. "
+                "El que te busca y se encuentra con eso no vuelve a probar: entra al siguiente resultado.")
+    apertura = elegir(APERTURAS_CON_WEB, lead.id, "apertura_wa").format(
+        dominio=dominio, busqueda=busqueda)
+    observacion = minuscula_inicial(principal.observacion if principal else "").rstrip(".")
+    # Un hallazgo de una auditoría vieja trae la consecuencia dentro de la
+    # observación: agregarle otra la diría dos veces en 73 palabras.
+    consecuencia = "" if (principal and principal.legado) else (
+        (principal.consecuencia if principal else "")
+        or f"{rubro.cliente} se va sin {rubro.accion}"
+    )
+    cuerpo_medio = f"{apertura} {observacion}."
+    if consecuencia:
+        cuerpo_medio += f" {mayuscula_inicial(consecuencia).rstrip('.')}."
+    return cuerpo_medio
+
+
 def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
     """Un mensaje pensado para el celular del dueño, no un correo reenviado.
 
@@ -177,7 +206,12 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
 
     plural = rubro.plural if (lead.url and rubro is not GENERICO) else None
     saludos = SALUDOS_V5 if plural else SALUDOS
-    cabecera = f"{elegir(saludos, lead.id, 'saludo_wa')} {_presentacion(lead, cfg, plural)}"
+    variante = elegir(VARIANTES_V6, lead.id, "variante_v6") if (inmobiliaria and cfg.sender_site) else "corta"
+    if variante == "identidad":
+        cabecera = f"{elegir(saludos, lead.id, 'saludo_wa')} {_presentacion(lead, cfg, plural)} " + \
+            elegir(IDENTIDAD_V6, lead.id, "identidad").format(enlace=enlace_corto(cfg.sender_site))
+    else:
+        cabecera = f"{elegir(saludos, lead.id, 'saludo_wa')} {_presentacion(lead, cfg, plural)}"
     cierre = elegir(CIERRE if lead.url else CIERRES_CON_BOCETO, lead.id, "cierre_wa")
 
     if not lead.url:
@@ -201,24 +235,10 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
         else:
             oferta = elegir(OFERTA[regla], lead.id, "oferta_wa")
     elif inaccesible:
-        cuerpo_medio = (
-            f"Quise entrar a {dominio} buscando {busqueda} y no cargó, probé dos veces. "
-            f"El que te busca y se encuentra con eso no vuelve a probar: entra al siguiente resultado."
-        )
+        cuerpo_medio = hallazgo_generico(lead, principal)
         oferta, cierre = "Si querés te paso exactamente qué error me apareció.", "¿Te sirve?"
     else:
-        apertura = elegir(APERTURAS_CON_WEB, lead.id, "apertura_wa").format(
-            dominio=dominio, busqueda=busqueda)
-        observacion = minuscula_inicial(principal.observacion if principal else "").rstrip(".")
-        # Un hallazgo de una auditoría vieja trae la consecuencia dentro de la
-        # observación: agregarle otra la diría dos veces en 73 palabras.
-        consecuencia = "" if (principal and principal.legado) else (
-            (principal.consecuencia if principal else "")
-            or f"{rubro.cliente} se va sin {rubro.accion}"
-        )
-        cuerpo_medio = f"{apertura} {observacion}."
-        if consecuencia:
-            cuerpo_medio += f" {mayuscula_inicial(consecuencia).rstrip('.')}."
+        cuerpo_medio = hallazgo_generico(lead, principal)
         oferta = ("Puedo mostrarte un boceto para facilitar la elección de prendas y el pedido."
                   if rubro.plural == "tiendas de ropa" else elegir(OFERTAS_CON_WEB, lead.id, "oferta_wa"))
 
@@ -231,7 +251,7 @@ def componer_whatsapp(lead: Lead, cfg: ComposeSettings) -> EmailDraft:
     # encabezado del chat, y el asunto no se manda por este canal (el .txt lo
     # imprimía como "gancho de referencia", o sea: trabajo tirado).
     cuerpo = estilo_felipe(limpiar("\n\n".join(b for b in bloques if b), dialecto))
-    return EmailDraft(asunto="", cuerpo=cuerpo, generado_por=VERSION, regla=regla)
+    return EmailDraft(asunto="", cuerpo=cuerpo, generado_por=VERSION, regla=regla, variante=variante)
 
 
 def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False,
@@ -281,7 +301,8 @@ def redactar_whatsapp(leads: list[Lead], cfg, forzar: bool = False,
             lead.motivo_descarte = "sin falla verificable para toque 1"
             continue
         borrador = componer_whatsapp(lead, cfg.compose)
-        problemas = validar(borrador, canal="whatsapp", dominio_propio=dominio_de(lead))
+        problemas = validar(borrador, canal="whatsapp", dominio_propio=dominio_de(lead),
+                            enlace_propio=enlace_corto(cfg.compose.sender_site))
         if problemas:
             rechazados += 1
             log.warning("WhatsApp con problemas para %s (%s)", lead.etiqueta, ", ".join(problemas))

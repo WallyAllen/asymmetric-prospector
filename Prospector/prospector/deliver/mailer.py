@@ -25,6 +25,7 @@ from ..models import Lead
 from ..storage import add_to_suppression, load_suppression, read_json, to_absolute, write_json
 from ..utils import registrable_domain
 from .quota import Quota
+from . import traza_borrador
 
 log = get_logger("cartero")
 
@@ -240,6 +241,7 @@ def enviar(leads: list[Lead], cfg: Settings, simular: bool = True, limite: int |
             "asunto": lead.email_draft.asunto,
             "score": lead.audit.score if lead.audit else None,
             "enviado_el": lead.enviado_el,
+            **traza_borrador(lead),
         })
         write_json(SENT_FILE, registro)
         cuota.anotar()

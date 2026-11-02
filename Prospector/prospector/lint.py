@@ -17,7 +17,7 @@ import random
 import re
 from collections import Counter
 
-from .compose.writer import dominio_de, validar
+from .compose.writer import dominio_de, enlace_corto, validar
 from .config import COMPOSED_FILE, settings
 from .models import Lead
 from .storage import load_leads
@@ -77,7 +77,7 @@ def _primera_oracion(cuerpo: str) -> str:
     return partes[0][:64] if partes else ""
 
 
-def _oracion_mas_repetida(cuerpos: list[str]) -> tuple[str, float]:
+def _oracion_mas_repetida(cuerpos: list[str], saltear_firma: bool = False) -> tuple[str, float]:
     """La oración del cuerpo que más mensajes comparten, y en qué %.
 
     La apertura sola no alcanzaba: en el prototipo de la v5, con cinco
@@ -90,6 +90,8 @@ def _oracion_mas_repetida(cuerpos: list[str]) -> tuple[str, float]:
     veces: Counter[str] = Counter()
     for cuerpo in cuerpos:
         resto = re.sub(r"^[^\n]*\n\n", "", cuerpo.strip(), count=1)
+        if saltear_firma:  # la firma del mail es idéntica en todos: no es repetición
+            resto = resto.rsplit("\n\n", 1)[0]
         veces.update(set(o.strip() for o in re.split(r"(?<=[.?])\s+", resto) if o.strip()))
     if not veces:
         return "", 0.0
@@ -102,6 +104,7 @@ def _marca(valor: float, objetivo: float) -> str:
 
 
 def _bloque(nombre: str, leads: list[Lead], lineas: list[str]) -> None:
+    _enlace = enlace_corto(settings.compose.sender_site)
     cuerpos = [l.email_draft.cuerpo for l in leads if l.email_draft]
     if not cuerpos:
         return
@@ -121,7 +124,7 @@ def _bloque(nombre: str, leads: list[Lead], lineas: list[str]) -> None:
         lineas.append(f"      «{frase}…»")
         lineas.append(f"  aperturas distintas       {len(aperturas):5d}")
 
-    frase, pct = _oracion_mas_repetida(cuerpos)
+    frase, pct = _oracion_mas_repetida(cuerpos, saltear_firma=(nombre == "email"))
     if frase:
         lineas.append(f"  oración más repetida      {pct:5.0f}%   (objetivo < {OBJETIVOS['oracion_top']}%)"
                       f"{_marca(pct, OBJETIVOS['oracion_top'])}")
@@ -142,12 +145,13 @@ def _bloque(nombre: str, leads: list[Lead], lineas: list[str]) -> None:
     for lead in leads:
         if not lead.email_draft:
             continue
-        for p in validar(lead.email_draft, canal=nombre, dominio_propio=dominio_de(lead)):
+        for p in validar(lead.email_draft, canal=nombre, dominio_propio=dominio_de(lead),
+                           enlace_propio=_enlace):
             # Se agrupa por tipo, no por texto exacto, para que 170 cuerpos
             # largos no impriman 170 renglones distintos.
             problemas[re.sub(r"\s*\([^)]*\)", "", p).strip()] += 1
     if problemas:
-        lineas.append(f"  no pasan la validación    {sum(1 for l in leads if l.email_draft and validar(l.email_draft, canal=nombre, dominio_propio=dominio_de(l))):5d}")
+        lineas.append(f"  no pasan la validación    {sum(1 for l in leads if l.email_draft and validar(l.email_draft, canal=nombre, dominio_propio=dominio_de(l), enlace_propio=_enlace)):5d}")
         for motivo, veces in problemas.most_common(6):
             lineas.append(f"      {veces:4d}  {motivo}")
     else:

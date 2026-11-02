@@ -18,6 +18,7 @@ from pathlib import Path
 
 from ..config import SENT_DIR, WHATSAPP_DIR, WHATSAPP_SENT_FILE, Settings, settings
 from ..logging_setup import get_logger
+from . import traza_borrador
 from ..models import Lead
 from ..storage import load_suppression, read_json, write_json
 from ..telefono import para_whatsapp
@@ -129,6 +130,7 @@ def registrar_envio(lead: Lead) -> None:
         "con_imagen": bool(lead.email_draft and lead.email_draft.adjunto),
         "toque": 1,
         "enviado_el": ahora,
+        **traza_borrador(lead),
     })
     write_json(WHATSAPP_SENT_FILE, registro)
     lead.estado = "enviado_whatsapp"

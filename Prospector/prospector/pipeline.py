@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 
 from .audit import auditar
-from .compose import redactar_todos, redactar_whatsapp
+from .compose import redactar_mail_v6, redactar_whatsapp
 from .config import (AUDITED_FILE, COMPOSED_FILE, RAW_FILE, Settings, ensure_dirs, settings)
 from .deliver import enviar, exportar_preview, exportar_whatsapp
 from .logging_setup import get_logger
@@ -135,7 +135,7 @@ def redactar_correos(cfg: Settings = settings, forzar: bool = False,
             lead.motivo_descarte = (
                 f"score {lead.audit.score} por debajo del umbral {cfg.audit.min_score}"
             )
-    redactar_todos(objetivo, cfg, forzar=forzar)
+    redactar_mail_v6(objetivo, cfg, forzar=forzar)
     redactar_whatsapp(objetivo, cfg, forzar=forzar)
     exportar_preview(leads)
     exportar_whatsapp(leads)

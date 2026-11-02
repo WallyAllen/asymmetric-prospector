@@ -319,7 +319,8 @@ FRASES_PROHIBIDAS_WHATSAPP = (
 )
 
 
-def validar(borrador: EmailDraft, canal: str = "email", dominio_propio: str = "") -> list[str]:
+def validar(borrador: EmailDraft, canal: str = "email", dominio_propio: str = "",
+            enlace_propio: str = "") -> list[str]:
     """Problemas que impiden mandar este texto. Lista vacía = se puede mandar."""
     limites = LIMITES.get(canal, LIMITES["email"])
     problemas: list[str] = []
@@ -358,6 +359,8 @@ def validar(borrador: EmailDraft, canal: str = "email", dominio_propio: str = ""
             # ("edu.ar" dentro de "cfp1tucuman.edu.ar"): la comparación iba al
             # revés y marcaba como enlace ajeno el dominio del propio lead.
             if not (propio and (u.lower().strip("/ ") in propio or propio in u.lower()))
+            # Y el LinkedIn propio de la variante "identidad" (spec 010).
+            and not (enlace_propio and u.lower() in enlace_propio.lower())
         ]
         if ajenos:
             problemas.append(f"enlace ajeno en WhatsApp: {ajenos[0]}")
@@ -483,6 +486,11 @@ def firma(cfg: ComposeSettings) -> str:
 
 def hallazgos_de(lead: Lead, maximo: int) -> list[Finding]:
     return lead.audit.argumentables[:maximo] if lead.audit else []
+
+
+def enlace_corto(url: str) -> str:
+    """`https://www.linkedin.com/in/x/` → `linkedin.com/in/x`, para WhatsApp."""
+    return (url or "").replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
 
 
 def dominio_de(lead: Lead) -> str:
@@ -876,6 +884,7 @@ def redactar_todos(leads: list[Lead], cfg, forzar: bool = False) -> list[Lead]:
         lead for lead in leads
         if lead.estado in {"auditado", "listo"} and (forzar or lead.email_draft is None)
         and lead.contactable
+        and rubro_de(lead.nicho, nombre=lead.nombre).plural != "inmobiliarias"
     ]
     sin_correo_ni_tel = [
         lead for lead in leads

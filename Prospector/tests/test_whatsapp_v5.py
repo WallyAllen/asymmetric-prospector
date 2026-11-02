@@ -152,7 +152,7 @@ class TestTexto(unittest.TestCase):
         lead = _lead(_f("popup_intrusivo"))
         _redactar(lead)
         self.assertEqual("listo_whatsapp", lead.estado)
-        self.assertEqual("plantilla-whatsapp-v5", lead.email_draft.generado_por)
+        self.assertEqual("plantilla-whatsapp-v6", lead.email_draft.generado_por)
         self.assertEqual("popup_intrusivo", lead.email_draft.regla)
         # Los JSON viejos no traen `regla` y tienen que seguir cargando.
         self.assertEqual("", EmailDraft.from_dict({"cuerpo": "hola"}).regla)
@@ -169,7 +169,7 @@ class TestCola(unittest.TestCase):
 
         _redactar(v4, enviado, respondido)
 
-        self.assertEqual("plantilla-whatsapp-v5", v4.email_draft.generado_por)
+        self.assertEqual("plantilla-whatsapp-v6", v4.email_draft.generado_por)
         self.assertEqual("lo que leyó", enviado.email_draft.cuerpo)
         self.assertEqual("enviado_whatsapp", enviado.estado)
         self.assertEqual("lo que leyó", respondido.email_draft.cuerpo)
@@ -181,7 +181,7 @@ class TestCola(unittest.TestCase):
         v4.email = "hola@ejemplo.com.ar"
         v4.email_draft = EmailDraft(cuerpo="texto v4", generado_por="claude-v4-whatsapp")
         _redactar(v4)
-        self.assertEqual("plantilla-whatsapp-v5", v4.email_draft.generado_por)
+        self.assertEqual("plantilla-whatsapp-v6", v4.email_draft.generado_por)
 
     def test_recompone_si_la_auditoria_es_mas_nueva_que_el_borrador(self):
         """Re-auditada, una web que ya carga seguía con el "no cargó" de la v5."""
